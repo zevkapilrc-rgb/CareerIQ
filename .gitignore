@@ -36,3 +36,5 @@ npm-debug.log*
 
 # Package lock (optional — keep if you want reproducible installs)
 # package-lock.json
+
+.vercel
