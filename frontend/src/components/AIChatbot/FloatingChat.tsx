@@ -5,7 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useAuthStore } from "../../state/useAuthStore";
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 type Message = { role: "user" | "assistant"; content: string };
 

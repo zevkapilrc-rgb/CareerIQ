@@ -1,6 +1,7 @@
 "use client";
 import { useAppStore } from "@/src/state/useAppStore";
 import Link from "next/link";
+import ResumeGate from "@/src/components/ResumeGate";
 
 const DEFAULT_SKILLS = [
     { name: "React.js", yours: 88, required: 90, color: "#61dafb" },
@@ -28,48 +29,10 @@ const SKILL_COLORS = ["#a78bfa", "#60a5fa", "#34d399", "#fbbf24", "#f87171", "#f
 export default function SkillsPage() {
     const { profile } = useAppStore();
 
-    // Resume guard
-    if (!profile || !profile.skills || profile.skills.length === 0) {
-        return (
-            <div className="page-enter">
-                <div style={{ marginBottom: 24 }}>
-                    <h1>Skill Gap Analyzer</h1>
-                    <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>Compare your skills against job role requirements and market trends.</p>
-                </div>
-                <div className="card card-glow" style={{ textAlign: "center", padding: "56px 32px", background: "linear-gradient(135deg,rgba(124,58,237,0.12),rgba(167,139,250,0.06))" }}>
-                    <div style={{ fontSize: "3rem", marginBottom: 16 }} className="animate-float">🎯</div>
-                    <h2 style={{ marginBottom: 8 }}>Resume Required</h2>
-                    <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", maxWidth: 420, margin: "0 auto 24px", lineHeight: 1.7 }}>
-                        Upload your resume to unlock your personalized skill gap analysis — see exactly where you stand vs industry requirements and get a priority learning plan.
-                    </p>
-                    <Link href="/resume" className="btn-primary" style={{ textDecoration: "none", padding: "13px 32px", fontSize: "0.95rem" }}>
-                        🚀 Upload Resume — Unlock Skill Gap
-                    </Link>
-                </div>
-                <div style={{ opacity: 0.3, filter: "blur(3px)", pointerEvents: "none", userSelect: "none", marginTop: 24 }}>
-                    <div className="card" style={{ marginBottom: 20 }}>
-                        <h3>Skill Gap Analysis</h3>
-                        {DEFAULT_SKILLS.slice(0, 4).map(s => (
-                            <div key={s.name} style={{ marginBottom: 10 }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", marginBottom: 4 }}>
-                                    <span style={{ color: "var(--text)" }}>{s.name}</span>
-                                </div>
-                                <div className="progress-track"><div className="progress-fill" style={{ width: `${s.yours}%` }} /></div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-                <div style={{ textAlign: "center", marginTop: 8, fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                    🔒 Upload a resume to unlock personalized skill gap analysis
-                </div>
-            </div>
-        );
-    }
-
     // Build skill gap from actual resume
-    const resumeSkills = profile.skills.slice(0, 12).map((name, i) => ({
+    const resumeSkills = (profile?.skills || []).slice(0, 12).map((name, i) => ({
         name,
-        yours: Math.min(95, 50 + (profile.experience || 0) * 8 + i * 3),
+        yours: Math.min(95, 50 + (profile?.experience || 0) * 8 + i * 3),
         required: Math.min(100, 70 + i * 2),
         color: SKILL_COLORS[i % SKILL_COLORS.length],
     }));
@@ -86,10 +49,11 @@ export default function SkillsPage() {
     const displayRecs = resumeRecs.length > 0 ? resumeRecs : recs;
 
     return (
+        <ResumeGate pageName="Skill Gap Analyzer" pageIcon="🧩">
         <div className="page-enter">
             <h1 style={{ marginBottom: 4 }}>Skill Gap Analyzer</h1>
             <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: 24 }}>
-                Based on your <strong style={{ color: "var(--accent)" }}>{profile.domain}</strong> profile.{" "}
+                Based on your <strong style={{ color: "var(--accent)" }}>{profile?.domain}</strong> profile.{" "}
                 <strong style={{ color: "var(--green)" }}>{resumeSkills.filter(s => s.yours >= s.required).length} skills met</strong>,{" "}
                 <strong style={{ color: "var(--red)" }}>{resumeSkills.filter(s => s.yours < s.required).length} gaps identified</strong>.
             </p>
@@ -142,6 +106,7 @@ export default function SkillsPage() {
                     ))}
                 </div>
             </div>
-        </div>
+            </div>
+        </ResumeGate>
     );
 }

@@ -1,0 +1,31 @@
+# ── Python backend (deploy separately on Railway/Render) ──────────
+backend/
+.venv/
+venv/
+env/
+
+# ── Python caches ─────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+
+# ── Dev databases ─────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Node / build artifacts ────────────────────────────────────────
+frontend/node_modules/
+frontend/.next/
+node_modules/
+.next/
+
+# ── OS / IDE ──────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ── Secrets ───────────────────────────────────────────────────────
+backend/.env
+*.env.local

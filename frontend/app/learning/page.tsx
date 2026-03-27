@@ -613,6 +613,44 @@ const CATEGORY_ROADMAP: Record<string, { steps: string[]; skills: string[]; jobs
     },
 };
 
+const DOMAIN_SKILLS_REQ: Record<string, string[]> = {
+    "Full-Stack Developer": ["React", "Node.js", "MongoDB", "TypeScript", "HTML/CSS", "System Design"],
+    "AI/ML Engineer": ["Python", "TensorFlow", "Scikit-Learn", "Deep Learning", "SQL", "Mathematics"],
+    "Data Scientist": ["Python", "Pandas", "Statistics", "Machine Learning", "Data Visualization", "SQL"],
+    "DevOps Engineer": ["AWS", "Docker", "Kubernetes", "Linux", "CI/CD", "Networking"],
+    "Backend Developer": ["Java", "Spring Boot", "SQL", "APIs", "Microservices", "Data Structures"],
+    "Mobile Developer": ["React Native", "Flutter", "Swift", "Kotlin", "UI/UX"],
+    "Cyber Security": ["Networking", "Linux", "Ethical Hacking", "Cryptography", "Security Protocols"],
+    "Mechanical Engineer": ["AutoCAD", "Thermodynamics", "Fluid Mechanics", "Manufacturing", "SolidWorks"],
+    "Civil Engineer": ["AutoCAD", "Structural Analysis", "AutoCAD Civil 3D", "Surveying"],
+    "Electronics Engineer": ["Circuit Design", "Microcontrollers", "Embedded Systems", "MATLAB", "Signals"],
+};
+
+const STREAM_SKILLS: Record<string, string[]> = {
+    "cse": ["Data Structures", "HTML/CSS", "Java", "Python", "Networking", "MongoDB", "Node.js", "System Design"],
+    "ai": ["Python", "Machine Learning", "Deep Learning", "Mathematics", "TensorFlow"],
+    "aids": ["Python", "Pandas", "Statistics", "Data Visualization", "SQL", "Scikit-Learn"],
+    "cy": ["Networking", "Linux", "Ethical Hacking", "Cryptography", "Security Protocols"],
+    "me": ["AutoCAD", "Thermodynamics", "Fluid Mechanics", "Manufacturing", "SolidWorks"],
+    "it": ["Networking", "Linux", "CI/CD", "AWS", "Docker", "TypeScript"],
+    "se": ["React", "Node.js", "TypeScript", "Java", "Spring Boot", "Microservices", "Kubernetes"],
+    "ds": ["SQL", "Pandas", "Machine Learning", "Data Visualization", "Python"],
+    "ce": ["AutoCAD", "Structural Analysis", "Surveying", "AutoCAD Civil 3D"],
+    "ece": ["Circuit Design", "Microcontrollers", "MATLAB", "Signals", "Embedded Systems"],
+    "bsc-cs": ["React", "Node.js", "Python", "Data Structures", "SQL"],
+    "bsc-it": ["Networking", "Linux", "CI/CD", "Docker", "APIs"],
+    "bca": ["Java", "Spring Boot", "SQL", "APIs", "Microservices", "React Native"],
+    "bcom-ca": ["SQL", "Data Structures", "APIs"],
+    "aiml": ["Python", "TensorFlow", "Scikit-Learn", "Deep Learning"],
+    "bsc-ai": ["Mathematics", "Python", "Scikit-Learn", "Machine Learning"],
+    "bsc-ds": ["Python", "Pandas", "Data Visualization"],
+    "bsc-math": ["Mathematics", "Statistics", "Data Visualization"],
+    "bsc-stat": ["Statistics", "Python", "Machine Learning"],
+    "eee": ["Circuit Design", "MATLAB", "Microcontrollers"],
+    "eie": ["Embedded Systems", "Signals", "MATLAB"],
+    "bdes": ["UI/UX", "Flutter", "Swift", "React Native"]
+};
+
 const CATEGORY_YT: Record<string, { title: string; url: string }> = {
     "Engineering": { title: "Engineering Career Roadmap", url: "https://www.youtube.com/watch?v=B3y0RsVCyrw" },
     "Science": { title: "Science Careers Explained", url: "https://www.youtube.com/watch?v=ua-CiDNNj30" },
@@ -657,8 +695,25 @@ export default function LearningPage() {
 
     // Resume-based recommendations
     const userDomain = profile?.domain || "";
-    const recommendedIds = DOMAIN_TO_STREAMS[userDomain] || [];
+    const allDomainCourseIds = DOMAIN_TO_STREAMS[userDomain] || [];
     const hasResume = !!profile?.skills?.length;
+
+    // Step 1 - Identify Skill Gaps
+    const domainReqSkills = DOMAIN_SKILLS_REQ[userDomain] || [];
+    const userSkillsLower = (profile?.skills || []).map(s => s.toLowerCase());
+    const missingSkills = domainReqSkills.filter(req => !userSkillsLower.some(ps => ps.includes(req.toLowerCase()) || req.toLowerCase().includes(ps)));
+
+    // Step 2 & 4 - Course Recommendation (Filter mapped courses based on missing skills)
+    const recommendedIds = allDomainCourseIds.filter(id => {
+        const taughtSkills = STREAM_SKILLS[id] || [];
+        // recommend course if it teaches any of the missing skills
+        return taughtSkills.some(ts => missingSkills.some(ms => ms.toLowerCase() === ts.toLowerCase()));
+    });
+    // Fallback if no matching skills found but we have domain courses
+    if (recommendedIds.length === 0 && missingSkills.length > 0 && allDomainCourseIds.length > 0) {
+        recommendedIds.push(allDomainCourseIds[0]);
+    }
+
     const [showRecommended, setShowRecommended] = useState(false);
     const [lessonProgress, setLessonProgress] = useState<Record<string, boolean>>({});
 
@@ -802,14 +857,15 @@ export default function LearningPage() {
 
     const StreamCard = ({ s }: { s: typeof STREAMS[0] }) => {
         const done = !!progress[s.id];
-        const isMatch = recommendedIds.includes(s.id);
+        const isRecommended = recommendedIds.includes(s.id);
+        const isMatch = isRecommended;
         return (
             <div className="card liquid-glass" onClick={() => setSelected(s)}
-                style={{ cursor: "pointer", borderColor: done ? "rgba(86,227,160,0.25)" : `${s.color}22`, padding: "14px 16px", transition: "all 0.2s", position: "relative" }}
+                style={{ cursor: "pointer", borderColor: done ? "rgba(86,227,160,0.25)" : isRecommended ? "rgba(251,191,36,0.3)" : `${s.color}22`, padding: "14px 16px", transition: "all 0.2s", position: "relative" }}
                 onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = "translateY(-4px) scale(1.02)"; el.style.boxShadow = `0 10px 32px ${s.color}18`; el.style.borderColor = `${s.color}55`; }}
-                onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = ""; el.style.boxShadow = ""; el.style.borderColor = done ? "rgba(86,227,160,0.25)" : `${s.color}22`; }}>
+                onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = ""; el.style.boxShadow = ""; el.style.borderColor = done ? "rgba(86,227,160,0.25)" : isRecommended ? "rgba(251,191,36,0.3)" : `${s.color}22`; }}>
                 {isMatch && (
-                    <div style={{ position: "absolute", top: 6, right: 8, fontSize: "0.55rem", background: "rgba(86,227,160,0.12)", color: "var(--green)", borderRadius: 10, padding: "1px 6px", fontWeight: 600 }}>⭐ Match</div>
+                    <div style={{ position: "absolute", top: 6, right: 8, fontSize: "0.6rem", background: "rgba(251,191,36,0.15)", color: "#fbbf24", borderRadius: 10, padding: "2px 8px", fontWeight: 700 }}>Recommended for You</div>
                 )}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                     <span style={{ fontSize: "1.5rem" }}>{s.emoji}</span>
@@ -836,30 +892,32 @@ export default function LearningPage() {
                 <input className="input-field" placeholder="Search streams…" value={search} onChange={e => setSearch(e.target.value)} style={{ maxWidth: 200 }} />
             </div>
 
-            {/* ── Section 1: Courses Matched to Your Resume (only when resume uploaded) ── */}
+            {/* ── Section 1: Recommended Courses for Your Skill Gaps ── */}
             {hasResume && recommendedIds.length > 0 && (
                 <div style={{ marginBottom: 40 }}>
                     <div style={{
                         display: "flex", alignItems: "center", gap: 12, marginBottom: 16,
                         padding: "12px 18px", borderRadius: 12,
-                        background: "linear-gradient(135deg, rgba(86,227,160,0.08), rgba(52,211,153,0.04))",
-                        border: "1px solid rgba(86,227,160,0.2)",
+                        background: "linear-gradient(135deg, rgba(251,191,36,0.08), rgba(245,158,11,0.04))",
+                        border: "1px solid rgba(251,191,36,0.2)",
                     }}>
-                        <div style={{ fontSize: "1.4rem" }}>⭐</div>
+                        <div style={{ fontSize: "1.4rem" }}>🎯</div>
                         <div>
                             <div style={{ fontWeight: 700, fontSize: "1rem", color: "var(--text)", marginBottom: 2 }}>
-                                Courses Matched to Your Resume
+                                Recommended Courses for Your Skill Gaps
                             </div>
                             <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                                {recommendedIds.length} courses recommended based on your <strong style={{ color: "var(--green)" }}>{userDomain}</strong> profile
+                                Missing skills: {missingSkills.length > 0 ? (
+                                    <strong style={{ color: "#fbbf24" }}>{missingSkills.slice(0, 3).join(", ")}{missingSkills.length > 3 ? "..." : ""}</strong>
+                                ) : "None"} — we found these courses to help you master them.
                             </div>
                         </div>
-                        <span style={{ marginLeft: "auto", fontSize: "0.7rem", background: "rgba(86,227,160,0.12)", color: "var(--green)", border: "1px solid rgba(86,227,160,0.25)", borderRadius: 20, padding: "4px 12px", fontWeight: 600 }}>
-                            {recommendedIds.length} matches
+                        <span style={{ marginLeft: "auto", fontSize: "0.7rem", background: "rgba(251,191,36,0.12)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.25)", borderRadius: 20, padding: "4px 12px", fontWeight: 600 }}>
+                            {recommendedIds.length} recommended
                         </span>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 10 }}>
-                        {STREAMS.filter(s => recommendedIds.includes(s.id)).map(s => (
+                        {filtered.filter(s => recommendedIds.includes(s.id)).map(s => (
                             <StreamCard key={s.id} s={s} />
                         ))}
                     </div>
@@ -887,7 +945,7 @@ export default function LearningPage() {
                 </div>
             )}
 
-            {/* ── Section 2: All Courses ── */}
+            {/* ── Section 2: All Courses (full catalog always shown) ── */}
             <div>
                 <div style={{
                     display: "flex", alignItems: "center", gap: 12, marginBottom: 16,
@@ -898,11 +956,13 @@ export default function LearningPage() {
                     <div style={{ fontSize: "1.4rem" }}>📖</div>
                     <div>
                         <div style={{ fontWeight: 700, fontSize: "1rem", color: "var(--text)", marginBottom: 2 }}>All Courses</div>
-                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Browse all {STREAMS.length} streams across Engineering, Science, Arts, Commerce & Professional</div>
+                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                            Browse all {STREAMS.length} streams across Engineering, Science, Arts, Commerce &amp; Professional
+                        </div>
                     </div>
                 </div>
 
-                {/* Category filter pills */}
+                {/* Category filter pills — always shown */}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
                     {CATS.map(c => (
                         <button key={c} onClick={() => setFilterCat(c)} style={{
@@ -917,7 +977,7 @@ export default function LearningPage() {
                     ))}
                 </div>
 
-                {/* Stream groups */}
+                {/* Stream groups — full catalog */}
                 {grouped.map(({ cat, items }) => (
                     <div key={cat} style={{ marginBottom: 32 }}>
                         <h2 style={{ fontSize: "1rem", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>

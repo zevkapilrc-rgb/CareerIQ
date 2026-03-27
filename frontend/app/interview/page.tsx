@@ -2,20 +2,49 @@
 import { useState, useRef, useEffect } from "react";
 import { useAppStore } from "@/src/state/useAppStore";
 import { useRouter } from "next/navigation";
+import ResumeGate from "@/src/components/ResumeGate";
 
-type QType = "theory" | "practical" | "problem" | "behavioral";
+type QType = "theory" | "practical" | "problem" | "behavioral" | "aptitude";
 interface Question { text: string; type: QType; hint: string; marks: number; }
-const typeColor: Record<QType, string> = { theory: "#a78bfa", practical: "#60a5fa", problem: "#34d399", behavioral: "#fbbf24" };
-const typeLabel: Record<QType, string> = { theory: "Core Theory", practical: "Practical", problem: "Problem Solving", behavioral: "Behavioral" };
+const typeColor: Record<QType, string> = { theory: "#a78bfa", practical: "#60a5fa", problem: "#34d399", behavioral: "#fbbf24", aptitude: "#f472b6" };
+const typeLabel: Record<QType, string> = { theory: "Core Theory", practical: "Practical", problem: "Problem Solving", behavioral: "Behavioral", aptitude: "Aptitude / Reasoning" };
+
+function buildAptitudeQuestions(domain: string, skills: string[]): Question[] {
+    const s0 = skills[0] || "programming";
+    const quantitative: Question[] = [
+        { text: `If a ${s0} application processes 1,200 requests/minute and each request takes 250ms on average, how many concurrent workers are needed to handle the load without queuing?`, type: "aptitude", hint: "Little's Law: Workers = Arrival Rate × Processing Time. Convert units carefully.", marks: 10 },
+        { text: `A software team of 4 developers: A finishes a module in 12 days, B in 18 days, C in 24 days, D in 36 days. How many days will it take all four working together (round to nearest whole day)?`, type: "aptitude", hint: "Sum of work rates: 1/12 + 1/18 + 1/24 + 1/36 per day. Find combined rate.", marks: 10 },
+        { text: `A ${domain} project costs ₹2,40,000. After a 15% cost overrun and then a 10% discount on the new total, what is the final cost?`, type: "aptitude", hint: "Apply overrun first: 2,40,000 × 1.15, then apply 10% discount on that result.", marks: 10 },
+        { text: `In a binary search of a sorted array of 65,536 elements, what is the maximum number of comparisons needed in the worst case?`, type: "aptitude", hint: "Binary search: ⌈log₂(n)⌉ comparisons. 65,536 = 2^16.", marks: 10 },
+        { text: `Server A processes tasks twice as fast as Server B. Together they finish 360 tasks in 4 hours. How many tasks can Server A alone finish in 3 hours?`, type: "aptitude", hint: "If B does x tasks/hr, A does 2x. Together 3x × 4hrs = 360. Find A's rate.", marks: 10 },
+        { text: `A company's ${domain} team grows by 20% each quarter. If they start with 25 engineers, how many engineers will they have after 3 quarters?`, type: "aptitude", hint: "Compound growth: 25 × (1.20)^3. Calculate step by step.", marks: 8 },
+    ];
+    const logical: Question[] = [
+        { text: `In a code review: every bug found by engineer P is also found by Q. Some bugs found by Q are critical. Which conclusion is DEFINITELY true?\nA) All of P's bugs are critical\nB) Some of P's bugs may be critical\nC) P finds no non-critical bugs\nD) Q finds all critical bugs`, type: "aptitude", hint: "P ⊆ Q and Q ∩ Critical ≠ ∅. Does P necessarily intersect Critical? Use Venn diagram reasoning.", marks: 8 },
+        { text: `Decode the pattern: API → 1-16-9, URL → 21-18-12, SDK → 19-4-11. What does BUG decode to?`, type: "aptitude", hint: "Each letter maps to its position in the alphabet (A=1, B=2... Z=26). Verify with the examples.", marks: 8 },
+        { text: `A ${domain} team: A is senior to B, C is junior to D, E is senior to D, B is senior to C. Rank all from most to least senior.`, type: "aptitude", hint: "Build chains: A > B > C on one side, E > D > C on the other. Find the full order.", marks: 8 },
+        { text: `If CLOUD is coded as ENWQF (each letter shifted forward by +2, +1, +2, +1, +2...), what would REACT be coded as?`, type: "aptitude", hint: "Alternating shift: odd positions +2, even positions +1. Apply to each letter of REACT.", marks: 8 },
+        { text: `Three CI/CD pipelines start at 9AM. Pipeline A takes 45min, B takes 30min, C takes 60min. If they can only run one at a time (in order A, B, C), when does the last pipeline finish?`, type: "aptitude", hint: "Sequential: 9AM + 45min = 9:45, then +30min = 10:15, then +60min = 11:15AM.", marks: 8 },
+    ];
+    const verbal: Question[] = [
+        { text: `Choose the word most opposite in meaning to "DEPRECATED" in a software context:\nA) Outdated  B) Obsolete  C) Current  D) Legacy`, type: "aptitude", hint: "Deprecated means no longer recommended / being phased out. What is the opposite state?", marks: 5 },
+        { text: `Fill in the blank: "A well-designed ${s0} API should be _____ to new features without breaking existing _____ contracts."\nA) closed, API  B) open, interface  C) rigid, user  D) deprecated, binary`, type: "aptitude", hint: "Think Open-Closed Principle: open for extension, closed for modification. What breaks when APIs change?", marks: 5 },
+        { text: `Identify the one that does NOT belong with the others: Git, Docker, Jenkins, React, Kubernetes — which one is primarily a UI library rather than a DevOps/infrastructure tool?`, type: "aptitude", hint: "Think about what each tool's primary purpose is. Which builds user interfaces?", marks: 5 },
+        { text: `Choose the best synonym for CONCURRENCY in ${domain}: A) Parallelism only  B) Sequential execution  C) Multiple tasks making progress simultaneously  D) Single-threaded processing`, type: "aptitude", hint: "Concurrency vs parallelism: concurrency is about structure (interleaved progress), not necessarily simultaneous execution.", marks: 5 },
+    ];
+    const all = [...quantitative, ...logical, ...verbal];
+    return all.sort(() => Math.random() - 0.5).slice(0, 3);
+}
 
 function buildQuestions(skills: string[], domain: string, exp: number): Question[] {
     const s0 = skills[0] || "programming"; const s1 = skills[1] || "backend"; const s2 = skills[2] || "SQL";
     const theory: Question[] = [
-        { text: `Explain the core concepts of ${s0}. What makes it different from alternatives?`, type: "theory", hint: "Cover architecture, design principles, and trade-offs", marks: 15 },
-        { text: `What are the SOLID principles in software design? Give a real example for each using ${domain}.`, type: "theory", hint: "5 principles with concrete ${domain} examples", marks: 15 },
-        { text: `Explain how memory management works in ${s0 || "your primary language"}.`, type: "theory", hint: "Garbage collection, stack/heap, references, leaks", marks: 10 },
-        { text: `What is the difference between REST, GraphQL, and gRPC? When would you use each?`, type: "theory", hint: "Compare architecture, use cases, performance", marks: 10 },
-        { text: `Describe the event loop and concurrency model in ${domain.includes("Full") ? "JavaScript" : s0}.`, type: "theory", hint: "Call stack, event queue, microtasks vs macrotasks", marks: 10 },
+        { text: `Explain the core concepts of ${s0}. What makes it different from its alternatives?`, type: "theory", hint: "Cover architecture, design principles, and real trade-offs.", marks: 15 },
+        { text: `What are the SOLID principles in software design? Give a real example for each using ${domain}.`, type: "theory", hint: `5 principles with concrete ${domain} examples.`, marks: 15 },
+        { text: `Explain how memory management works in ${s0 || "your primary language"}.`, type: "theory", hint: "Garbage collection, stack/heap, references, memory leaks.", marks: 10 },
+        { text: `What is the difference between REST, GraphQL, and gRPC? When would you use each in a ${domain} project?`, type: "theory", hint: "Compare architecture, use cases, performance and when each shines.", marks: 10 },
+        { text: `Describe the concurrency model in ${domain.includes("Full") ? "JavaScript" : s0}. How does it handle async operations?`, type: "theory", hint: "Call stack, event queue, microtasks vs macrotasks, async/await.", marks: 10 },
+        { text: `How does ${s1} handle authentication and authorization? What are best security practices?`, type: "theory", hint: "JWT, OAuth2, role-based access, token refresh, secure headers.", marks: 10 },
     ];
     const practical: Question[] = [
         { text: `Walk me through a ${domain} project where ${s0} was critical. What was the toughest technical challenge?`, type: "practical", hint: "Use STAR: Situation, Task, Action, Result with metrics", marks: 15 },
@@ -125,9 +154,10 @@ export default function InterviewPage() {
 
     // SETUP phase
     if (phase === "setup") return (
+        <ResumeGate pageName="Interview Simulator" pageIcon="🎤">
         <div className="page-enter" style={{ maxWidth: 800, margin: "0 auto" }}>
             <h1 style={{ marginBottom: 4 }}>🎤 Interview Simulator</h1>
-            <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: 16 }}>AI-powered VR mock interviews with questions tailored to your resume profile</p>
+            <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: 16 }}>AI-powered VR mock interviews with questions tailored to your resume — including aptitude & reasoning rounds</p>
 
             {/* Resume role pre-fill banner */}
             {profile?.domain && (
@@ -138,35 +168,28 @@ export default function InterviewPage() {
                         <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f1f5f9" }}>{profile.domain}</div>
                         <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: 2 }}>{profile.experience || 0} yr experience · {profile.skills?.slice(0, 3).join(", ")}{profile.skills?.length > 3 ? ` +${profile.skills.length - 3} more` : ""}</div>
                     </div>
-                    <div style={{ marginLeft: "auto", fontSize: "0.68rem", color: "rgba(52,211,153,0.8)", fontWeight: 600, background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.25)", borderRadius: 20, padding: "4px 12px" }}>✓ Auto-filled</div>
+                    <div style={{ marginLeft: "auto", fontSize: "0.68rem", color: "rgba(52,211,153,0.8)", fontWeight: 600, background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.25)", borderRadius: 20, padding: "4px 12px" }}>✓ Resume Loaded</div>
                 </div>
             )}
 
             <div className="card" style={{ background: "rgba(167,139,250,0.06)", borderColor: "rgba(167,139,250,0.2)", marginBottom: 20 }}>
-                <h3>Question Distribution</h3>
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    {[["40%", "Core Theory", "#a78bfa"], ["30%", "Practical", "#60a5fa"], ["20%", "Problem Solving", "#34d399"], ["10%", "Behavioral", "#fbbf24"]].map(([p, l, c]) => (
-                        <div key={l as string} style={{ flex: 1, minWidth: 120, background: `${c}11`, border: `1px solid ${c}33`, borderRadius: 10, padding: "12px 16px", textAlign: "center" }}>
-                            <div style={{ fontSize: "1.4rem", fontWeight: 800, color: c as string }}>{p}</div>
-                            <div style={{ fontSize: "0.73rem", color: "var(--text-muted)" }}>{l}</div>
+                <h3>Question Distribution — 8 Questions Total</h3>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                    {[["2", "Core Theory", "#a78bfa","Based on your skills"], ["2", "Practical", "#60a5fa","Real-world scenarios"], ["1", "Problem Solving", "#34d399","DSA & algorithms"], ["1", "Behavioral", "#fbbf24","Soft skills"], ["2", "Aptitude", "#f472b6","Quantitative & logical"]].map(([p, l, c, sub]) => (
+                        <div key={l as string} style={{ flex: 1, minWidth: 110, background: `${c}11`, border: `1px solid ${c}33`, borderRadius: 10, padding: "10px 14px", textAlign: "center" }}>
+                            <div style={{ fontSize: "1.6rem", fontWeight: 800, color: c as string }}>{p}</div>
+                            <div style={{ fontSize: "0.7rem", fontWeight: 700, color: c as string, marginBottom: 2 }}>{l}</div>
+                            <div style={{ fontSize: "0.62rem", color: "var(--text-muted)" }}>{sub}</div>
                         </div>
                     ))}
                 </div>
             </div>
 
-            {profile?.skills && profile.skills.length > 0 ? (
-                <div className="card" style={{ marginBottom: 20 }}>
-                    <h3>Questions will be based on your profile</h3>
-                    <div style={{ display: "flex", flexWrap: "wrap" }}>{profile.skills.slice(0, 8).map(s => <span key={s} className="skill-tag">{s}</span>)}</div>
-                    <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: 10, margin: 0 }}>Domain: <strong style={{ color: "var(--accent)" }}>{profile.domain}</strong> · {profile.experience} years experience</p>
-                </div>
-            ) : (
-                <div className="card" style={{ marginBottom: 20, borderColor: "rgba(251,191,36,0.3)" }}>
-                    <div style={{ color: "var(--yellow)", fontWeight: 600, marginBottom: 8 }}>⚠ No Resume Profile Found</div>
-                    <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: 14 }}>For personalized questions, upload your resume first. Otherwise, default Full-Stack Developer questions will be used.</p>
-                    <button className="btn-ghost" onClick={() => router.push("/resume")}>Upload Resume →</button>
-                </div>
-            )}
+            <div className="card" style={{ marginBottom: 20 }}>
+                <h3>🎯 Your Resume Profile — Questions Personalized For You</h3>
+                <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 10 }}>{profile!.skills.slice(0, 8).map(s => <span key={s} className="skill-tag">{s}</span>)}</div>
+                <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", margin: 0 }}>Domain: <strong style={{ color: "var(--accent)" }}>{profile!.domain}</strong> · {profile!.experience} year(s) experience · Aptitude questions adapted to your field</p>
+            </div>
 
             <div className="grid-3" style={{ marginBottom: 24 }}>
                 {[["hr", "👔", "HR Round", "Behavioral & personality + domain questions", "#a78bfa"], ["tech", "💻", "Technical Round", "Deep technical + system design", "#60a5fa"], ["code", "🧑‍💻", "Coding Round", "DSA, algorithms + problem solving", "#34d399"]].map(([id, icon, title, desc, color]) => (
@@ -190,10 +213,11 @@ export default function InterviewPage() {
                 </ul>
             </div>
 
-            <button className="btn-primary" onClick={startInterview} style={{ padding: "13px 32px", fontSize: "0.95rem" }}>
-                Start {round.toUpperCase()} Interview →
+            <button className="btn-primary" onClick={startInterview} style={{ padding: "13px 32px", fontSize: "0.95rem", background: "linear-gradient(135deg,#7c3aed,#a78bfa)", boxShadow: "0 8px 24px rgba(124,58,237,0.35)" }}>
+                🚀 Start {round.toUpperCase()} Interview →
             </button>
         </div>
+        </ResumeGate>
     );
 
     // INTERVIEW phase

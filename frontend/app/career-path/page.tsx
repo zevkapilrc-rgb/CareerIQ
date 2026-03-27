@@ -1,6 +1,7 @@
 "use client";
 import { useAppStore } from "@/src/state/useAppStore";
 import Link from "next/link";
+import ResumeGate from "@/src/components/ResumeGate";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line } from "recharts";
 
 const roles = [
@@ -26,56 +27,22 @@ const roadmap = [
 export default function CareerPathPage() {
     const { profile } = useAppStore();
 
-    // Resume guard
-    if (!profile || !profile.skills || profile.skills.length === 0) {
-        return (
-            <div className="page-enter">
-                <div style={{ marginBottom: 24 }}>
-                    <h1>Career Path Prediction</h1>
-                    <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>ML-powered career alignment, salary projection, and 1-year growth roadmap.</p>
-                </div>
-                <div className="card card-glow" style={{ textAlign: "center", padding: "56px 32px", background: "linear-gradient(135deg,rgba(124,58,237,0.12),rgba(167,139,250,0.06))" }}>
-                    <div style={{ fontSize: "3rem", marginBottom: 16 }} className="animate-float">🗺️</div>
-                    <h2 style={{ marginBottom: 8 }}>Resume Required</h2>
-                    <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", maxWidth: 420, margin: "0 auto 24px", lineHeight: 1.7 }}>
-                        Upload your resume to unlock your personalized career path prediction, role alignment scores, salary projections, and a tailored 6-month growth roadmap.
-                    </p>
-                    <Link href="/resume" className="btn-primary" style={{ textDecoration: "none", padding: "13px 32px", fontSize: "0.95rem" }}>
-                        🚀 Upload Resume — Unlock Career Path
-                    </Link>
-                </div>
-                <div style={{ opacity: 0.3, filter: "blur(3px)", pointerEvents: "none", userSelect: "none", marginTop: 24 }}>
-                    <div className="grid-2" style={{ marginBottom: 20 }}>
-                        {roles.map((r) => (
-                            <div key={r.title} className="card" style={{ borderColor: `${r.color}40` }}>
-                                <h2 style={{ marginBottom: 4 }}>{r.title}</h2>
-                                <div className="progress-track"><div className="progress-fill" style={{ width: `${r.align}%` }} /></div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-                <div style={{ textAlign: "center", marginTop: 8, fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                    🔒 Upload a resume to unlock all career path insights
-                </div>
-            </div>
-        );
-    }
-
     const userRoles = roles.map(r => ({
         ...r,
-        align: Math.min(98, r.align + (profile.experience || 0) * 3),
+        align: Math.min(98, r.align + (profile?.experience || 0) * 3),
     }));
     const userProbData = probData.map(p => ({
         ...p,
-        prob: Math.min(98, p.prob + (profile.experience || 0) * 2),
+        prob: Math.min(98, p.prob + (profile?.experience || 0) * 2),
     }));
 
     return (
+        <ResumeGate pageName="Career Path AI" pageIcon="🗺️">
         <div className="page-enter">
             <h1 style={{ marginBottom: 4 }}>Career Path Prediction</h1>
             <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: 24 }}>
-                Based on your <strong style={{ color: "var(--accent)" }}>{profile.domain}</strong> profile with{" "}
-                <strong style={{ color: "var(--accent)" }}>{profile.skills.length} skills</strong>.
+                Based on your <strong style={{ color: "var(--accent)" }}>{profile?.domain}</strong> profile with{" "}
+                <strong style={{ color: "var(--accent)" }}>{profile?.skills.length} skills</strong>.
             </p>
 
             <div className="grid-2" style={{ marginBottom: 20 }}>
@@ -143,6 +110,7 @@ export default function CareerPathPage() {
                     ))}
                 </div>
             </div>
-        </div>
+            </div>
+        </ResumeGate>
     );
 }
