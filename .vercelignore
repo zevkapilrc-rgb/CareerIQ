@@ -1,5 +1,6 @@
-# ── Python backend (deploy separately on Railway/Render) ──────────
-backend/
+# ── Python backend (Include for Vercel Serverless) ──────────────
+# backend/ removed to allow Vercel to access backend code
+
 .venv/
 venv/
 env/
