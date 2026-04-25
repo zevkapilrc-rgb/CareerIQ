@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "firebase": "^12.12.1",
+    "next": "^14.1.0",
     "razorpay": "^2.9.6"
   }
 }
