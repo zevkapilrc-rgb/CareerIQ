@@ -492,6 +492,7 @@ const SkillIntelligencePanel: React.FC<{
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: idx * 0.05 }}
                 className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium"
+              >
                 <span className="flex items-center gap-1"><Check size={14} /> {skill}</span>
               </motion.span>
             ))}
@@ -508,6 +509,7 @@ const SkillIntelligencePanel: React.FC<{
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: idx * 0.05 }}
                 className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium"
+              >
                 <span className="flex items-center gap-1"><ArrowRight size={14} /> {skill}</span>
               </motion.span>
             ))}
@@ -524,6 +526,7 @@ const SkillIntelligencePanel: React.FC<{
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: idx * 0.05 }}
                 className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium"
+              >
                 <span className="flex items-center gap-1"><X size={14} /> {skill}</span>
               </motion.span>
             ))}
@@ -540,6 +543,7 @@ const SkillIntelligencePanel: React.FC<{
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: idx * 0.05 }}
                 className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium"
+              >
                 <span className="flex items-center gap-1"><Star size={14} /> {skill}</span>
               </motion.span>
             ))}
@@ -631,6 +635,7 @@ const CareerInsightsPanel: React.FC<{
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.1 }}
                 className="text-sm bg-blue-50 text-blue-900 p-2 rounded"
+              >
                 <span className="flex items-center gap-2"><BookOpen size={16} /> {rec}</span>
               </motion.li>
             ))}

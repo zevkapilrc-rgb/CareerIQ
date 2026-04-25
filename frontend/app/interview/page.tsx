@@ -201,11 +201,13 @@ export default function InterviewPage() {
                 </div>
             </div>
 
-            <div className="card" style={{ marginBottom: 20 }}>
-                <h3 style={{ display: "flex", alignItems: "center", gap: 8 }}><Target size={18} /> Your Resume Profile — Questions Personalized For You</h3>
-                <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 10 }}>{profile!.skills.slice(0, 8).map(s => <span key={s} className="skill-tag">{s}</span>)}</div>
-                <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", margin: 0 }}>Domain: <strong style={{ color: "var(--accent)" }}>{profile!.domain}</strong> · {profile!.experience} year(s) experience · Aptitude questions adapted to your field</p>
-            </div>
+            {profile && (
+                <div className="card" style={{ marginBottom: 20 }}>
+                    <h3 style={{ display: "flex", alignItems: "center", gap: 8 }}><Target size={18} /> Your Resume Profile — Questions Personalized For You</h3>
+                    <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 10 }}>{profile.skills?.slice(0, 8).map((s: string) => <span key={s} className="skill-tag">{s}</span>)}</div>
+                    <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", margin: 0 }}>Domain: <strong style={{ color: "var(--accent)" }}>{profile.domain}</strong> · {profile.experience} year(s) experience · Aptitude questions adapted to your field</p>
+                </div>
+            )}
 
             {/* Round Selection */}
             <div className="grid-3" style={{ marginBottom: 20 }}>

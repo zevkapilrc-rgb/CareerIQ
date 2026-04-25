@@ -113,6 +113,7 @@ export default function FloatingChat() {
             height: 200, padding: "10px 12px", overflowY: "auto",
             display: "flex", flexDirection: "column", gap: 8,
           }}>
+            {messages.length === 0 && (
               <div style={{ color: "rgba(163,119,157,0.5)", fontSize: "0.78rem", textAlign: "center", marginTop: 60, display: "flex", flexDirection: "column", alignItems: "center" }}>
                 <div style={{ marginBottom: 6 }}><Sparkles size={36} color="var(--accent)" /></div>
                 Hi! I'm HelixAI — ask me anything about your career, resume, or interview prep!

@@ -22,7 +22,7 @@ const nodes = [
 ];
 
 // Map connections to line coordinates
-const links = [];
+const links: any[] = [];
 nodes.forEach(n => {
     n.connections.forEach(targetId => {
         const target = nodes.find(t => t.id === targetId);
