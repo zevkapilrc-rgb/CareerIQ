@@ -1,0 +1,17 @@
+{
+  "name": "careeriq-v3",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && pip install -r requirements.txt && uvicorn app.main:app --reload --port 8000",
+    "build": "cd frontend && npm run build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "firebase": "^12.12.1",
+    "razorpay": "^2.9.6"
+  }
+}

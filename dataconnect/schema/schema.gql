@@ -1,0 +1,47 @@
+type User @table {
+  displayName: String!
+  email: String!
+  createdAt: Timestamp!
+  photoUrl: String
+  lastLoginAt: Timestamp
+}
+
+type Resume @table {
+  name: String!
+  createdAt: Timestamp!
+  updatedAt: Timestamp!
+  contentJson: String!
+  originalFileName: String
+  templateUsed: String
+  user: User
+}
+
+type ResumeAnalysis @table {
+  analysisDate: Timestamp!
+  overallScore: Int!
+  feedbackJson: String!
+  keywordSuggestions: [String]
+  formattingIssues: [String]
+  resume: Resume
+}
+
+type JobPosting @table {
+  title: String!
+  companyName: String!
+  location: String!
+  description: String!
+  postedDate: Date!
+  url: String
+  salaryRange: String
+  requiredSkills: [String]
+}
+
+type UserJobApplication @table {
+  applicationDate: Timestamp!
+  status: String!
+  notes: String
+  lastStatusUpdate: Timestamp
+  user: User
+  jobPosting: JobPosting
+  resume: Resume
+}

@@ -1,7 +1,19 @@
 "use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useAppStore } from "@/src/state/useAppStore";
 import { useRouter } from "next/navigation";
+import { BookOpen, Target, FileText, Wrench, FlaskConical, Palette, Briefcase, Award, PlayCircle, Map, Hammer, PlaySquare, BookMarked, Play } from "lucide-react";
+
+const getCategoryIcon = (cat: string, size = 24) => {
+    switch (cat) {
+        case "Engineering": return <Wrench size={size} />;
+        case "Science": return <FlaskConical size={size} />;
+        case "Arts": return <Palette size={size} />;
+        case "Commerce": return <Briefcase size={size} />;
+        case "Professional": return <Award size={size} />;
+        default: return <BookOpen size={size} />;
+    }
+};
 
 // ─── Stream Catalog ──────────────────────────────
 const STREAMS = [
@@ -693,15 +705,60 @@ export default function LearningPage() {
 
     const totalDone = Object.keys(progress).length;
 
-    // Resume-based recommendations
+    // Resume-based recommendations — with fuzzy domain matching
     const userDomain = profile?.domain || "";
-    const allDomainCourseIds = DOMAIN_TO_STREAMS[userDomain] || [];
     const hasResume = !!profile?.skills?.length;
 
-    // Step 1 - Identify Skill Gaps
-    const domainReqSkills = DOMAIN_SKILLS_REQ[userDomain] || [];
+    // Fuzzy match: find the best DOMAIN_TO_STREAMS key that matches the user's domain
+    const findBestDomainKey = (domain: string): string => {
+        if (!domain) return "";
+        const domainLower = domain.toLowerCase();
+        // Direct match first
+        if (DOMAIN_TO_STREAMS[domain]) return domain;
+        // Fuzzy match: check if any key is contained in the domain or vice versa
+        const keys = Object.keys(DOMAIN_TO_STREAMS);
+        for (const key of keys) {
+            const keyLower = key.toLowerCase();
+            if (domainLower.includes(keyLower) || keyLower.includes(domainLower)) return key;
+            // Partial word matching: "Full-Stack" matches "Senior Full-Stack Engineer"
+            const keyWords = keyLower.split(/[\s\-\/]+/).filter(w => w.length > 3);
+            if (keyWords.some(w => domainLower.includes(w))) return key;
+        }
+        // Default fallback based on common keywords
+        if (domainLower.includes("full") && domainLower.includes("stack")) return "Full-Stack Developer";
+        if (domainLower.includes("ai") || domainLower.includes("machine")) return "AI/ML Engineer";
+        if (domainLower.includes("data") && domainLower.includes("scien")) return "Data Scientist";
+        if (domainLower.includes("devops")) return "DevOps Engineer";
+        if (domainLower.includes("backend")) return "Backend Developer";
+        if (domainLower.includes("mobile")) return "Mobile Developer";
+        if (domainLower.includes("cyber") || domainLower.includes("security")) return "Cyber Security";
+        if (domainLower.includes("mechanic")) return "Mechanical Engineer";
+        if (domainLower.includes("civil")) return "Civil Engineer";
+        if (domainLower.includes("electron")) return "Electronics Engineer";
+        return keys[0] || "";
+    };
+
+    const matchedDomainKey = findBestDomainKey(userDomain);
+    const allDomainCourseIds = DOMAIN_TO_STREAMS[matchedDomainKey] || [];
+
+    // Read stored resume analysis for richer skill gap data
+    const [storedAnalysis, setStoredAnalysis] = React.useState<any>(null);
+    React.useEffect(() => {
+        if (typeof window !== "undefined") {
+            const stored = localStorage.getItem("ciq-resume-analysis");
+            if (stored) setStoredAnalysis(JSON.parse(stored));
+        }
+    }, []);
+
+    // Step 1 - Identify Skill Gaps (use stored analysis weak/missing skills if available)
+    const domainReqSkills = DOMAIN_SKILLS_REQ[matchedDomainKey] || [];
     const userSkillsLower = (profile?.skills || []).map(s => s.toLowerCase());
-    const missingSkills = domainReqSkills.filter(req => !userSkillsLower.some(ps => ps.includes(req.toLowerCase()) || req.toLowerCase().includes(ps)));
+    
+    // Combine missing skills from both the domain requirements AND the stored resume analysis
+    const storedMissing = storedAnalysis?.missingSkills || [];
+    const storedWeak = storedAnalysis?.weakSkills || [];
+    const gapFromDomain = domainReqSkills.filter(req => !userSkillsLower.some(ps => ps.includes(req.toLowerCase()) || req.toLowerCase().includes(ps)));
+    const missingSkills = [...new Set([...gapFromDomain, ...storedMissing, ...storedWeak])];
 
     // Step 2 & 4 - Course Recommendation (Filter mapped courses based on missing skills)
     const recommendedIds = allDomainCourseIds.filter(id => {
@@ -709,9 +766,9 @@ export default function LearningPage() {
         // recommend course if it teaches any of the missing skills
         return taughtSkills.some(ts => missingSkills.some(ms => ms.toLowerCase() === ts.toLowerCase()));
     });
-    // Fallback if no matching skills found but we have domain courses
-    if (recommendedIds.length === 0 && missingSkills.length > 0 && allDomainCourseIds.length > 0) {
-        recommendedIds.push(allDomainCourseIds[0]);
+    // Fallback: if no skill-based match, recommend ALL domain courses
+    if (recommendedIds.length === 0 && allDomainCourseIds.length > 0 && hasResume) {
+        allDomainCourseIds.forEach(id => { if (!recommendedIds.includes(id)) recommendedIds.push(id); });
     }
 
     const [showRecommended, setShowRecommended] = useState(false);
@@ -741,7 +798,7 @@ export default function LearningPage() {
             <div className="page-enter" style={{ maxWidth: 760, margin: "0 auto" }}>
                 <div style={{ display: "flex", gap: 10, marginBottom: 20, alignItems: "center", flexWrap: "wrap" }}>
                     <button className="btn-ghost" onClick={() => setSelected(null)}>← All Streams</button>
-                    <span style={{ fontSize: "1.5rem" }}>{selected.emoji}</span>
+                    <span style={{ color: selected.color, display: "flex" }}>{getCategoryIcon(selected.cat, 28)}</span>
                     <h1 style={{ fontSize: "1.1rem", margin: 0 }}>{selected.name}</h1>
                     <span style={{ fontSize: "0.68rem", background: `${selected.color}18`, color: selected.color, border: `1px solid ${selected.color}28`, borderRadius: 20, padding: "2px 10px" }}>{selected.cat}</span>
                     {done && <span className="badge-green">✓ Completed</span>}
@@ -750,23 +807,23 @@ export default function LearningPage() {
                 {/* YouTube Resource */}
                 <div className="card" style={{ marginBottom: 16, borderColor: "rgba(255,60,60,0.2)", background: "rgba(255,0,0,0.02)" }}>
                     <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
-                        <div style={{ width: 30, height: 30, borderRadius: 8, background: "#ff0000", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: "0.8rem" }}>▶</div>
+                        <div style={{ width: 30, height: 30, borderRadius: 8, background: "#ff0000", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}><PlaySquare size={16} /></div>
                         <span style={{ fontWeight: 700 }}>YouTube Learning Resource</span>
                     </div>
                     <a href={selected.yt} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10, background: "rgba(255,0,0,0.05)", border: "1px solid rgba(255,60,60,0.2)", borderRadius: 10, padding: "12px 16px" }}>
-                        <div style={{ width: 28, height: 28, borderRadius: 7, background: "#ff0000", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: "0.7rem" }}>▶</div>
+                        <div style={{ width: 28, height: 28, borderRadius: 7, background: "#ff0000", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}><Play size={14} /></div>
                         <div>
                             <div style={{ fontSize: "0.84rem", fontWeight: 600, color: "var(--text)" }}>{selected.ytTitle}</div>
-                            <div style={{ fontSize: "0.66rem", color: "var(--text-muted)" }}>📺 YouTube · {selected.name}</div>
+                            <div style={{ fontSize: "0.66rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4 }}><PlaySquare size={12} /> YouTube · {selected.name}</div>
                         </div>
                         <div style={{ marginLeft: "auto", fontSize: "0.72rem", color: "#f87171", fontWeight: 600 }}>Watch →</div>
                     </a>
                     {categoryYt && (
                         <a href={categoryYt.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10, background: "rgba(255,0,0,0.04)", border: "1px solid rgba(255,60,60,0.15)", borderRadius: 10, padding: "10px 16px", marginTop: 8 }}>
-                            <div style={{ width: 28, height: 28, borderRadius: 7, background: "#cc0000", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: "0.7rem" }}>▶</div>
+                            <div style={{ width: 28, height: 28, borderRadius: 7, background: "#cc0000", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}><Play size={14} /></div>
                             <div>
                                 <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text)" }}>{categoryYt.title}</div>
-                                <div style={{ fontSize: "0.66rem", color: "var(--text-muted)" }}>📺 Career guidance for {selected.cat}</div>
+                                <div style={{ fontSize: "0.66rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4 }}><PlaySquare size={12} /> Career guidance for {selected.cat}</div>
                             </div>
                             <div style={{ marginLeft: "auto", fontSize: "0.72rem", color: "#f87171", fontWeight: 600 }}>Watch →</div>
                         </a>
@@ -775,7 +832,7 @@ export default function LearningPage() {
 
                 {/* Roadmap */}
                 <div className="card liquid-glass" style={{ marginBottom: 16, borderColor: `${selected.color}30` }}>
-                    <h3 style={{ marginBottom: 14, color: selected.color }}>🗺️ Career Roadmap for {selected.name}</h3>
+                    <h3 style={{ marginBottom: 14, color: selected.color, display: "flex", alignItems: "center", gap: 8 }}><Map size={20} /> Career Roadmap for {selected.name}</h3>
                     {roadmap.steps.map((step, i) => (
                         <div key={i} style={{ display: "flex", gap: 10, marginBottom: 10, alignItems: "flex-start" }}>
                             <div style={{ width: 24, height: 24, borderRadius: "50%", background: `linear-gradient(135deg,${selected.color}99,${selected.color})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.7rem", fontWeight: 800, color: "white", flexShrink: 0 }}>{i + 1}</div>
@@ -787,11 +844,11 @@ export default function LearningPage() {
                 {/* Skills + Jobs */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 16 }}>
                     <div className="card">
-                        <h4 style={{ marginBottom: 10, fontSize: "0.85rem" }}>🛠️ Key Skills to Build</h4>
+                        <h4 style={{ marginBottom: 10, fontSize: "0.85rem", display: "flex", alignItems: "center", gap: 6 }}><Hammer size={16} /> Key Skills to Build</h4>
                         {roadmap.skills.map(s => <div key={s} className="skill-tag" style={{ display: "block", marginBottom: 5 }}>{s}</div>)}
                     </div>
                     <div className="card">
-                        <h4 style={{ marginBottom: 10, fontSize: "0.85rem" }}>💼 Career Opportunities</h4>
+                        <h4 style={{ marginBottom: 10, fontSize: "0.85rem", display: "flex", alignItems: "center", gap: 6 }}><Briefcase size={16} /> Career Opportunities</h4>
                         {roadmap.jobs.map(j => <div key={j} style={{ padding: "5px 0", borderBottom: "1px solid var(--border)", fontSize: "0.82rem", color: "var(--text-sub)" }}>→ {j}</div>)}
                     </div>
                 </div>
@@ -799,7 +856,7 @@ export default function LearningPage() {
                 {/* Lessons inside this stream */}
                 {(STREAM_LESSONS[selected.id] || []).length > 0 && (
                     <div className="card" style={{ marginBottom: 16 }}>
-                        <h3 style={{ marginBottom: 14 }}>📖 Course Modules ({(STREAM_LESSONS[selected.id] || []).length} lessons)</h3>
+                        <h3 style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}><BookMarked size={20} /> Course Modules ({(STREAM_LESSONS[selected.id] || []).length} lessons)</h3>
                         <div className="progress-track" style={{ height: 5, marginBottom: 14 }}>
                             <div className="progress-fill" style={{ width: `${(STREAM_LESSONS[selected.id] || []).filter((_, li) => lessonProgress[`${selected.id}-${li}`]).length / (STREAM_LESSONS[selected.id] || []).length * 100}%` }} />
                         </div>
@@ -813,7 +870,7 @@ export default function LearningPage() {
                                         <div style={{ fontSize: "0.82rem", fontWeight: 600, color: lDone ? "var(--green)" : "var(--text)" }}>{lesson.title}</div>
                                         <div style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>⏱ {lesson.duration}</div>
                                     </div>
-                                    <a href={lesson.yt} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 5, fontSize: "0.7rem", color: "#f87171", fontWeight: 600, background: "rgba(255,0,0,0.06)", border: "1px solid rgba(255,60,60,0.15)", borderRadius: 8, padding: "4px 10px" }}>▶ {lesson.ytTitle}</a>
+                                    <a href={lesson.yt} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 5, fontSize: "0.7rem", color: "#f87171", fontWeight: 600, background: "rgba(255,0,0,0.06)", border: "1px solid rgba(255,60,60,0.15)", borderRadius: 8, padding: "4px 10px" }}><PlayCircle size={12} /> {lesson.ytTitle}</a>
                                     {!lDone && <button onClick={() => markLessonDone(lKey)} style={{ padding: "4px 10px", fontSize: "0.68rem", borderRadius: 8, border: "1px solid rgba(86,227,160,0.3)", background: "rgba(86,227,160,0.08)", color: "var(--green)", cursor: "pointer", fontWeight: 600 }}>✓ Done</button>}
                                 </div>
                             );
@@ -824,7 +881,7 @@ export default function LearningPage() {
                 {/* Upload prompt */}
                 <div className="card" style={{ marginBottom: 16, background: "linear-gradient(135deg, rgba(102,51,153,0.10), rgba(155,89,182,0.06))", borderColor: "rgba(155,89,182,0.3)", boxShadow: "0 4px 20px rgba(102,51,153,0.10)" }}>
                     <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                        <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg,rgba(102,51,153,0.4),rgba(155,89,182,0.6))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.3rem", flexShrink: 0, boxShadow: "0 4px 12px rgba(102,51,153,0.3)" }}>📄</div>
+                        <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg,rgba(102,51,153,0.4),rgba(155,89,182,0.6))", display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0, boxShadow: "0 4px 12px rgba(102,51,153,0.3)" }}><FileText size={20} /></div>
                         <div style={{ flex: 1 }}>
                             <div style={{ fontWeight: 700, marginBottom: 3 }}>Get personalised guidance</div>
                             <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>Upload your resume to get an ATS score, skill gap analysis, and a custom path for {selected.name}</div>
@@ -851,8 +908,12 @@ export default function LearningPage() {
     }
 
     // ── Stream Grid ──
+    // When resume is uploaded, exclude recommended streams from the remaining catalog
+    const remainingFiltered = hasResume && recommendedIds.length > 0
+        ? filtered.filter(s => !recommendedIds.includes(s.id))
+        : filtered;
     const grouped = CATS.slice(1).map(cat => ({
-        cat, items: filtered.filter(s => s.cat === cat),
+        cat, items: remainingFiltered.filter(s => s.cat === cat),
     })).filter(g => g.items.length > 0 && (filterCat === "All" || filterCat === g.cat));
 
     const StreamCard = ({ s }: { s: typeof STREAMS[0] }) => {
@@ -868,13 +929,13 @@ export default function LearningPage() {
                     <div style={{ position: "absolute", top: 6, right: 8, fontSize: "0.6rem", background: "rgba(251,191,36,0.15)", color: "#fbbf24", borderRadius: 10, padding: "2px 8px", fontWeight: 700 }}>Recommended for You</div>
                 )}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                    <span style={{ fontSize: "1.5rem" }}>{s.emoji}</span>
+                    <span style={{ color: s.color, display: "flex" }}>{getCategoryIcon(s.cat, 24)}</span>
                     {done && <span style={{ fontSize: "0.6rem", background: "rgba(86,227,160,0.12)", color: "var(--green)", border: "1px solid rgba(86,227,160,0.25)", borderRadius: 20, padding: "1px 7px" }}>✓</span>}
                 </div>
                 <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--text)", lineHeight: 1.4, marginBottom: 6 }}>{s.name}</div>
                 <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                     <span style={{ width: 5, height: 5, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
-                    <span style={{ fontSize: "0.6rem", color: "var(--text-muted)" }}>▶ YouTube · Roadmap · +30 XP</span>
+                    <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4 }}><PlaySquare size={10} /> YouTube · Roadmap · +30 XP</span>
                 </div>
             </div>
         );
@@ -884,7 +945,7 @@ export default function LearningPage() {
         <div className="page-enter">
             <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 8 }}>
                 <div>
-                    <h1 style={{ marginBottom: 4 }}>📚 Learning Path</h1>
+                    <h1 style={{ marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}><BookOpen size={24} /> Learning Path</h1>
                     <p style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>
                         <strong style={{ color: "var(--accent)" }}>{STREAMS.length} streams</strong> · {totalDone} studied{hasResume ? ` · Domain: ${userDomain}` : " · Upload resume for personalised path"}
                     </p>
@@ -894,40 +955,60 @@ export default function LearningPage() {
 
             {/* ── Section 1: Recommended Courses for Your Skill Gaps ── */}
             {hasResume && recommendedIds.length > 0 && (
-                <div style={{ marginBottom: 40 }}>
-                    <div style={{
-                        display: "flex", alignItems: "center", gap: 12, marginBottom: 16,
-                        padding: "12px 18px", borderRadius: 12,
-                        background: "linear-gradient(135deg, rgba(251,191,36,0.08), rgba(245,158,11,0.04))",
-                        border: "1px solid rgba(251,191,36,0.2)",
-                    }}>
-                        <div style={{ fontSize: "1.4rem" }}>🎯</div>
-                        <div>
-                            <div style={{ fontWeight: 700, fontSize: "1rem", color: "var(--text)", marginBottom: 2 }}>
-                                Recommended Courses for Your Skill Gaps
+                <div style={{ marginBottom: 48 }}>
+                    {/* Primary Recommendation (Advanced Growth Path) */}
+                    {(() => {
+                        const topPickId = recommendedIds[0];
+                        const topPickStream = STREAMS.find(s => s.id === topPickId);
+                        if (!topPickStream) return null;
+                        
+                        return (
+                            <div className="card animate-glow" style={{ position: "relative", overflow: "hidden", marginBottom: 24, padding: 32, borderColor: "rgba(251,191,36,0.4)", background: "linear-gradient(135deg,rgba(251,191,36,0.08),rgba(0,0,0,0.5))", boxShadow: "0 10px 40px rgba(0,0,0,0.5)" }}>
+                                <div style={{ position: "absolute", top: -40, right: -40, width: 250, height: 250, background: "radial-gradient(circle, rgba(251,191,36,0.12) 0%, transparent 70%)", pointerEvents: "none" }} />
+                                
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 24 }}>
+                                    <div style={{ flex: 1, minWidth: 280 }}>
+                                        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(251,191,36,0.15)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.3)", borderRadius: 6, padding: "4px 10px", fontSize: "0.65rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 14 }}>
+                                            <Target size={14} /> Priority Growth Path
+                                        </div>
+                                        <h2 style={{ fontSize: "2rem", fontWeight: 900, marginBottom: 8, color: "#f8fafc", lineHeight: 1.2 }}>{topPickStream.name}</h2>
+                                        <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", maxWidth: 650, lineHeight: 1.7, marginBottom: 20 }}>
+                                            Based on your background in <strong style={{ color: "var(--text)" }}>{userDomain}</strong>, your profile lacks critical mass in 
+                                            <strong style={{ color: "#fbbf24" }}> {missingSkills.slice(0, 4).join(", ")}</strong>. 
+                                            Mastering this specific path will bridge your skill gap, immediately boosting your ATS ranking and market value.
+                                        </p>
+                                        <button className="btn-primary" onClick={() => setSelected(topPickStream)} style={{ padding: "12px 24px", fontSize: "0.9rem", background: "linear-gradient(135deg,#f59e0b,#d97706)", color: "white", boxShadow: "0 8px 24px rgba(245,158,11,0.3)", border: "none" }}>
+                                            Start This Path →
+                                        </button>
+                                    </div>
+                                    <div style={{ flexShrink: 0, width: 80, height: 80, borderRadius: 20, background: `linear-gradient(135deg, ${topPickStream.color}, rgba(0,0,0,0.8))`, display: "flex", alignItems: "center", justifyContent: "center", color: "white", boxShadow: `0 8px 32px ${topPickStream.color}40`, border: `1px solid ${topPickStream.color}66` }}>
+                                        {getCategoryIcon(topPickStream.cat, 36)}
+                                    </div>
+                                </div>
                             </div>
-                            <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                                Missing skills: {missingSkills.length > 0 ? (
-                                    <strong style={{ color: "#fbbf24" }}>{missingSkills.slice(0, 3).join(", ")}{missingSkills.length > 3 ? "..." : ""}</strong>
-                                ) : "None"} — we found these courses to help you master them.
+                        );
+                    })()}
+
+                    {/* Remaining Recommendations */}
+                    {recommendedIds.length > 1 && (
+                        <div>
+                            <div style={{ fontWeight: 700, fontSize: "1rem", color: "var(--text)", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                                <BookMarked size={18} color="var(--accent)" /> Secondary Path Suggestions
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 10 }}>
+                                {filtered.filter(s => recommendedIds.slice(1).includes(s.id)).map(s => (
+                                    <StreamCard key={s.id} s={s} />
+                                ))}
                             </div>
                         </div>
-                        <span style={{ marginLeft: "auto", fontSize: "0.7rem", background: "rgba(251,191,36,0.12)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.25)", borderRadius: 20, padding: "4px 12px", fontWeight: 600 }}>
-                            {recommendedIds.length} recommended
-                        </span>
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 10 }}>
-                        {filtered.filter(s => recommendedIds.includes(s.id)).map(s => (
-                            <StreamCard key={s.id} s={s} />
-                        ))}
-                    </div>
+                    )}
                 </div>
             )}
 
             {/* Upload prompt when no resume */}
             {!hasResume && (
                 <div className="card" style={{ marginBottom: 24, background: "linear-gradient(135deg, rgba(102,51,153,0.10), rgba(155,89,182,0.06))", borderColor: "rgba(155,89,182,0.3)", display: "flex", gap: 14, alignItems: "center", padding: 20, boxShadow: "0 4px 24px rgba(102,51,153,0.12)" }}>
-                    <div style={{ width: 52, height: 52, borderRadius: 14, background: "linear-gradient(135deg,rgba(102,51,153,0.4),rgba(155,89,182,0.6))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", flexShrink: 0, boxShadow: "0 4px 16px rgba(102,51,153,0.3)" }}>📄</div>
+                    <div style={{ width: 52, height: 52, borderRadius: 14, background: "linear-gradient(135deg,rgba(102,51,153,0.4),rgba(155,89,182,0.6))", display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0, boxShadow: "0 4px 16px rgba(102,51,153,0.3)" }}><FileText size={24} /></div>
                     <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, marginBottom: 3, fontSize: "0.95rem" }}>Upload your resume for a personalised learning path</div>
                         <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>Get ATS score, skill gap analysis, and a curated course list matched to your background</div>
@@ -945,7 +1026,7 @@ export default function LearningPage() {
                 </div>
             )}
 
-            {/* ── Section 2: All Courses (full catalog always shown) ── */}
+            {/* ── Section 2: Remaining Courses ── */}
             <div>
                 <div style={{
                     display: "flex", alignItems: "center", gap: 12, marginBottom: 16,
@@ -953,11 +1034,16 @@ export default function LearningPage() {
                     background: "linear-gradient(135deg, rgba(102,51,153,0.08), rgba(155,89,182,0.04))",
                     border: "1px solid rgba(102,51,153,0.2)",
                 }}>
-                    <div style={{ fontSize: "1.4rem" }}>📖</div>
+                    <div style={{ color: "var(--accent)" }}><BookMarked size={28} /></div>
                     <div>
-                        <div style={{ fontWeight: 700, fontSize: "1rem", color: "var(--text)", marginBottom: 2 }}>All Courses</div>
+                        <div style={{ fontWeight: 700, fontSize: "1rem", color: "var(--text)", marginBottom: 2 }}>
+                            {hasResume && recommendedIds.length > 0 ? "Explore More Courses" : "All Courses"}
+                        </div>
                         <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                            Browse all {STREAMS.length} streams across Engineering, Science, Arts, Commerce &amp; Professional
+                            {hasResume && recommendedIds.length > 0
+                                ? `Browse ${remainingFiltered.length} additional streams beyond your personalised recommendations`
+                                : `Browse all ${STREAMS.length} streams across Engineering, Science, Arts, Commerce & Professional`
+                            }
                         </div>
                     </div>
                 </div>
@@ -981,7 +1067,7 @@ export default function LearningPage() {
                 {grouped.map(({ cat, items }) => (
                     <div key={cat} style={{ marginBottom: 32 }}>
                         <h2 style={{ fontSize: "1rem", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
-                            {cat === "Engineering" ? "⚙️" : cat === "Science" ? "🔬" : cat === "Arts" ? "🎨" : cat === "Commerce" ? "💼" : "🏆"} {cat}
+                            {getCategoryIcon(cat, 20)} {cat}
                             <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 400 }}>({items.length} streams)</span>
                         </h2>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 10 }}>

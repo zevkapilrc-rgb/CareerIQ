@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useAppStore } from "@/src/state/useAppStore";
+import { Keyboard, Brain, Bug, Target, Zap, Database, Type, Book, Globe, Gamepad2, Joystick, Trophy, FileText, Mic, Star, Medal, BookOpen } from "lucide-react";
 
 // ──────────────────────────────────────────────────
 //  QUIZ DATA (Code Quiz game)
@@ -135,7 +136,7 @@ function TypingGame({ onExit, onXP }: { onExit: () => void; onXP: (xp: number, r
     return (
         <div className="card" style={{ maxWidth: 680, margin: "0 auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
-                <h2 style={{ margin: 0 }}>⌨️ Typing Speed Race</h2>
+                <h2 style={{ margin: 0, display: "flex", alignItems: "center", gap: 8 }}><Keyboard size={24} /> Typing Speed Race</h2>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Sentence {sentenceIdx + 1}/{sentenceList.length}</span>
                     <button className="btn-ghost" onClick={onExit} style={{ fontSize: "0.8rem" }}>← Exit</button>
@@ -150,7 +151,7 @@ function TypingGame({ onExit, onXP }: { onExit: () => void; onXP: (xp: number, r
                 </>
             ) : (
                 <div style={{ textAlign: "center", padding: "24px 0" }}>
-                    <div style={{ fontSize: "3rem", marginBottom: 12 }}>🏁</div>
+                    <div style={{ marginBottom: 12, display: "flex", justifyContent: "center", color: wpm >= 60 ? "var(--green)" : wpm >= 40 ? "var(--yellow)" : "var(--red)" }}><Target size={48} /></div>
                     <div style={{ fontSize: "2.5rem", fontWeight: 800, color: wpm >= 60 ? "var(--green)" : wpm >= 40 ? "var(--yellow)" : "var(--red)" }}>{wpm} WPM</div>
                     <div style={{ color: "var(--text-muted)", marginBottom: 20, fontSize: "0.85rem" }}>{wpm >= 60 ? "Excellent!" : wpm >= 40 ? "Good!" : "Keep practicing!"} · {accuracy}% accuracy</div>
                     <button className="btn-primary" onClick={() => { setInput(""); setStart(null); setDone(false); setSentenceIdx(i => (i + 1) % sentenceList.length); }}>Next Sentence →</button>
@@ -187,10 +188,10 @@ function QuizGame({ onExit, onXP }: { onExit: () => void; onXP: (xp: number, r: 
 
     if (done) return (
         <div className="card" style={{ maxWidth: 580, margin: "0 auto", textAlign: "center" }}>
-            <div style={{ fontSize: "3rem", marginBottom: 12 }}>🧠</div>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 12, color: "var(--accent)" }}><Brain size={48} /></div>
             <h2>Quiz Complete!</h2>
             <div style={{ fontSize: "3rem", fontWeight: 800, color: pct >= 80 ? "var(--green)" : pct >= 60 ? "var(--yellow)" : "var(--red)", margin: "12px 0" }}>{score}/10</div>
-            <div style={{ color: "var(--text-muted)", marginBottom: 24 }}>{pct >= 80 ? "🎉 Excellent knowledge!" : pct >= 60 ? "👍 Good, keep learning!" : "📚 Review the concepts and try again"}</div>
+            <div style={{ color: "var(--text-muted)", marginBottom: 24 }}>{pct >= 80 ? "Excellent knowledge!" : pct >= 60 ? "Good, keep learning!" : "Review the concepts and try again"}</div>
             <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
                 <button className="btn-primary" onClick={() => { setIdx(0); setScore(0); setSelected(null); setDone(false); }}>Play Again</button>
                 <button className="btn-ghost" onClick={onExit}>Back</button>
@@ -201,7 +202,7 @@ function QuizGame({ onExit, onXP }: { onExit: () => void; onXP: (xp: number, r: 
     return (
         <div className="card" style={{ maxWidth: 640, margin: "0 auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18 }}>
-                <h2 style={{ margin: 0 }}>🧠 Code Quiz</h2>
+                <h2 style={{ margin: 0, display: "flex", alignItems: "center", gap: 8 }}><Brain size={24} /> Code Quiz</h2>
                 <button className="btn-ghost" onClick={onExit} style={{ fontSize: "0.8rem" }}>← Exit</button>
             </div>
             <div style={{ display: "flex", gap: 4, marginBottom: 22 }}>
@@ -251,7 +252,7 @@ function BugHuntGame({ onExit, onXP }: { onExit: () => void; onXP: (xp: number, 
     return (
         <div className="card" style={{ maxWidth: 680, margin: "0 auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18 }}>
-                <h2 style={{ margin: 0 }}>🐛 Bug Hunt</h2>
+                <h2 style={{ margin: 0, display: "flex", alignItems: "center", gap: 8 }}><Bug size={24} /> Bug Hunt</h2>
                 <div style={{ display: "flex", gap: 8 }}>
                     <span style={{ color: "var(--green)", fontWeight: 700 }}>Score: {score}/{shuffled.length}</span>
                     <button className="btn-ghost" onClick={onExit} style={{ fontSize: "0.8rem" }}>← Exit</button>
@@ -264,9 +265,9 @@ function BugHuntGame({ onExit, onXP }: { onExit: () => void; onXP: (xp: number, 
                     <textarea value={answer} onChange={e => setAnswer(e.target.value)} placeholder="Describe the bug you found..." className="input-field" rows={3} style={{ marginBottom: 12 }} />
                     <div style={{ display: "flex", gap: 10 }}>
                         <button className="btn-primary" onClick={submit}>Submit Answer →</button>
-                        <button className="btn-ghost" onClick={() => setShowBug(!showBug)}>💡 Hint {showBug ? "×" : "→"}</button>
+                        <button className="btn-ghost" onClick={() => setShowBug(!showBug)}>Hint {showBug ? "×" : "→"}</button>
                     </div>
-                    {showBug && <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 10, fontSize: "0.8rem", color: "var(--yellow)" }}>💡 {q.hint}</div>}
+                    {showBug && <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 10, fontSize: "0.8rem", color: "var(--yellow)" }}>Hint: {q.hint}</div>}
                 </>
             ) : (
                 <div>
@@ -299,7 +300,7 @@ function FlashcardGame({ onExit, onXP }: { onExit: () => void; onXP: (xp: number
 
     if (reviewing) return (
         <div className="card" style={{ maxWidth: 540, margin: "0 auto", textAlign: "center" }}>
-            <div style={{ fontSize: "3rem", marginBottom: 12 }}>🃏</div>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 12, color: "var(--accent)" }}><BookOpen size={48} /></div>
             <h2>Deck Complete!</h2>
             <div style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--green)", margin: "12px 0" }}>{known}/{deck.length}</div>
             <div style={{ color: "var(--text-muted)", marginBottom: 24 }}>cards you knew</div>
@@ -314,7 +315,7 @@ function FlashcardGame({ onExit, onXP }: { onExit: () => void; onXP: (xp: number
     return (
         <div style={{ maxWidth: 540, margin: "0 auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18, alignItems: "center" }}>
-                <h2 style={{ margin: 0 }}>🃏 Flashcards</h2>
+                <h2 style={{ margin: 0, display: "flex", alignItems: "center", gap: 8 }}><BookOpen size={24} /> Flashcards</h2>
                 <button className="btn-ghost" onClick={onExit} style={{ fontSize: "0.8rem" }}>← Exit</button>
             </div>
             <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginBottom: 16 }}>{idx + 1}/{deck.length} · {known} known</div>
@@ -334,8 +335,8 @@ function FlashcardGame({ onExit, onXP }: { onExit: () => void; onXP: (xp: number
             </div>
             {flipped && (
                 <div style={{ display: "flex", gap: 12, marginTop: 18, justifyContent: "center" }}>
-                    <button onClick={() => mark(false)} style={{ flex: 1, padding: "11px 0", borderRadius: 11, border: "2px solid rgba(248,113,113,0.3)", background: "rgba(248,113,113,0.08)", color: "var(--red)", fontWeight: 700, cursor: "pointer", fontSize: "0.9rem" }}>😅 Didn't Know</button>
-                    <button onClick={() => mark(true)} style={{ flex: 1, padding: "11px 0", borderRadius: 11, border: "2px solid rgba(86,227,160,0.3)", background: "rgba(86,227,160,0.08)", color: "var(--green)", fontWeight: 700, cursor: "pointer", fontSize: "0.9rem" }}>✓ I Knew It!</button>
+                    <button onClick={() => mark(false)} style={{ flex: 1, padding: "11px 0", borderRadius: 11, border: "2px solid rgba(248,113,113,0.3)", background: "rgba(248,113,113,0.08)", color: "var(--red)", fontWeight: 700, cursor: "pointer", fontSize: "0.9rem" }}>Needs Review</button>
+                    <button onClick={() => mark(true)} style={{ flex: 1, padding: "11px 0", borderRadius: 11, border: "2px solid rgba(86,227,160,0.3)", background: "rgba(86,227,160,0.08)", color: "var(--green)", fontWeight: 700, cursor: "pointer", fontSize: "0.9rem" }}>✓ Mastered</button>
                 </div>
             )}
         </div>
@@ -368,8 +369,8 @@ function PatternMatchGame({ onExit, onXP }: { onExit: () => void; onXP: (xp: num
         if (p.options[i] === p.pattern) setScore(s => s + 1);
         setTimeout(() => { setPicked(null); if (idx + 1 >= shuffled.length) { setDone(true); onXP(score * 20, `Pattern Match: ${score}/${shuffled.length}`); } else setIdx(idx + 1); }, 1200);
     };
-    if (done) return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}><h2>🎯 Pattern Match Complete!</h2><div style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--accent)", margin: "20px 0" }}>{score}/{shuffled.length}</div><button className="btn-primary" onClick={onExit}>Back to Games</button></div>);
-    return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto" }}><button className="btn-ghost" onClick={onExit}>← Back</button><h2>🎯 Pattern Match · {idx + 1}/{shuffled.length}</h2><div className="card" style={{ fontFamily: "monospace", padding: 20, fontSize: "1.1rem", marginBottom: 16, background: "rgba(102,51,153,0.08)" }}>{p.code}</div><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>{p.options.map((o, i) => (<button key={i} onClick={() => pick(i)} disabled={picked !== null} style={{ padding: 14, borderRadius: 10, border: `2px solid ${picked === i ? (o === p.pattern ? "var(--green)" : "#f87171") : "rgba(163,119,157,0.2)"}`, background: picked === i ? (o === p.pattern ? "rgba(86,227,160,0.12)" : "rgba(248,113,113,0.12)") : "transparent", color: "var(--text)", cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}>{o}</button>))}</div></div>);
+    if (done) return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}><h2 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Target size={24} /> Pattern Match Complete!</h2><div style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--accent)", margin: "20px 0" }}>{score}/{shuffled.length}</div><button className="btn-primary" onClick={onExit}>Back to Games</button></div>);
+    return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto" }}><button className="btn-ghost" onClick={onExit}>← Back</button><h2 style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16 }}><Target size={24} /> Pattern Match · {idx + 1}/{shuffled.length}</h2><div className="card" style={{ fontFamily: "monospace", padding: 20, fontSize: "1.1rem", marginBottom: 16, background: "rgba(102,51,153,0.08)" }}>{p.code}</div><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>{p.options.map((o, i) => (<button key={i} onClick={() => pick(i)} disabled={picked !== null} style={{ padding: 14, borderRadius: 10, border: `2px solid ${picked === i ? (o === p.pattern ? "var(--green)" : "#f87171") : "rgba(163,119,157,0.2)"}`, background: picked === i ? (o === p.pattern ? "rgba(86,227,160,0.12)" : "rgba(248,113,113,0.12)") : "transparent", color: "var(--text)", cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}>{o}</button>))}</div></div>);
 }
 
 // ──────────────────────────────────────────────────
@@ -397,8 +398,8 @@ function AlgoRaceGame({ onExit, onXP }: { onExit: () => void; onXP: (xp: number,
         if (q.options[i] === q.answer) setScore(s => s + 1);
         setTimeout(() => { setPicked(null); if (idx + 1 >= shuffled.length) { setDone(true); onXP(score * 20, `Algo Race: ${score}/${shuffled.length}`); } else setIdx(idx + 1); }, 1000);
     };
-    if (done) return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}><h2>⚡ Algorithm Race Complete!</h2><div style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--accent)", margin: "20px 0" }}>{score}/{shuffled.length}</div><button className="btn-primary" onClick={onExit}>Back to Games</button></div>);
-    return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto" }}><button className="btn-ghost" onClick={onExit}>← Back</button><h2>⚡ Algorithm Race · {idx + 1}/{shuffled.length}</h2><div className="card" style={{ textAlign: "center", padding: 24, marginBottom: 16 }}><div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: 8 }}>What is the time complexity of:</div><div style={{ fontSize: "1.3rem", fontWeight: 800, color: "var(--accent)" }}>{q.algo}</div></div><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>{q.options.map((o, i) => (<button key={i} onClick={() => pick(i)} disabled={picked !== null} style={{ padding: 14, borderRadius: 10, border: `2px solid ${picked === i ? (o === q.answer ? "var(--green)" : "#f87171") : "rgba(163,119,157,0.2)"}`, background: picked === i ? (o === q.answer ? "rgba(86,227,160,0.12)" : "rgba(248,113,113,0.12)") : "transparent", color: "var(--text)", cursor: "pointer", fontWeight: 700, fontSize: "0.95rem", fontFamily: "monospace" }}>{o}</button>))}</div></div>);
+    if (done) return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}><h2 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Zap size={24} /> Algorithm Race Complete!</h2><div style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--accent)", margin: "20px 0" }}>{score}/{shuffled.length}</div><button className="btn-primary" onClick={onExit}>Back to Games</button></div>);
+    return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto" }}><button className="btn-ghost" onClick={onExit}>← Back</button><h2 style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16 }}><Zap size={24} /> Algorithm Race · {idx + 1}/{shuffled.length}</h2><div className="card" style={{ textAlign: "center", padding: 24, marginBottom: 16 }}><div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: 8 }}>What is the time complexity of:</div><div style={{ fontSize: "1.3rem", fontWeight: 800, color: "var(--accent)" }}>{q.algo}</div></div><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>{q.options.map((o, i) => (<button key={i} onClick={() => pick(i)} disabled={picked !== null} style={{ padding: 14, borderRadius: 10, border: `2px solid ${picked === i ? (o === q.answer ? "var(--green)" : "#f87171") : "rgba(163,119,157,0.2)"}`, background: picked === i ? (o === q.answer ? "rgba(86,227,160,0.12)" : "rgba(248,113,113,0.12)") : "transparent", color: "var(--text)", cursor: "pointer", fontWeight: 700, fontSize: "0.95rem", fontFamily: "monospace" }}>{o}</button>))}</div></div>);
 }
 
 // ──────────────────────────────────────────────────
@@ -424,8 +425,8 @@ function SQLChallengeGame({ onExit, onXP }: { onExit: () => void; onXP: (xp: num
         if (q.options[i] === q.ans) setScore(s => s + 1);
         setTimeout(() => { setPicked(null); if (idx + 1 >= shuffled.length) { setDone(true); onXP(score * 25, `SQL Challenge: ${score}/${shuffled.length}`); } else setIdx(idx + 1); }, 1200);
     };
-    if (done) return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}><h2>🗄️ SQL Challenge Complete!</h2><div style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--accent)", margin: "20px 0" }}>{score}/{shuffled.length}</div><button className="btn-primary" onClick={onExit}>Back to Games</button></div>);
-    return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto" }}><button className="btn-ghost" onClick={onExit}>← Back</button><h2>🗄️ SQL Challenge · {idx + 1}/{shuffled.length}</h2><div className="card" style={{ textAlign: "center", padding: 20, marginBottom: 16 }}><div style={{ fontSize: "0.88rem", fontWeight: 600, color: "var(--text)" }}>{q.q}</div></div><div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{q.options.map((o, i) => (<button key={i} onClick={() => pick(i)} disabled={picked !== null} style={{ padding: 12, borderRadius: 10, border: `2px solid ${picked === i ? (o === q.ans ? "var(--green)" : "#f87171") : "rgba(163,119,157,0.2)"}`, background: picked === i ? (o === q.ans ? "rgba(86,227,160,0.12)" : "rgba(248,113,113,0.12)") : "transparent", color: "var(--text)", cursor: "pointer", fontWeight: 600, fontSize: "0.78rem", fontFamily: "monospace", textAlign: "left" }}>{o}</button>))}</div></div>);
+    if (done) return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}><h2 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Database size={24} /> SQL Challenge Complete!</h2><div style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--accent)", margin: "20px 0" }}>{score}/{shuffled.length}</div><button className="btn-primary" onClick={onExit}>Back to Games</button></div>);
+    return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto" }}><button className="btn-ghost" onClick={onExit}>← Back</button><h2 style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16 }}><Database size={24} /> SQL Challenge · {idx + 1}/{shuffled.length}</h2><div className="card" style={{ textAlign: "center", padding: 20, marginBottom: 16 }}><div style={{ fontSize: "0.88rem", fontWeight: 600, color: "var(--text)" }}>{q.q}</div></div><div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{q.options.map((o, i) => (<button key={i} onClick={() => pick(i)} disabled={picked !== null} style={{ padding: 12, borderRadius: 10, border: `2px solid ${picked === i ? (o === q.ans ? "var(--green)" : "#f87171") : "rgba(163,119,157,0.2)"}`, background: picked === i ? (o === q.ans ? "rgba(86,227,160,0.12)" : "rgba(248,113,113,0.12)") : "transparent", color: "var(--text)", cursor: "pointer", fontWeight: 600, fontSize: "0.78rem", fontFamily: "monospace", textAlign: "left" }}>{o}</button>))}</div></div>);
 }
 
 // ──────────────────────────────────────────────────
@@ -451,8 +452,8 @@ function RegexMasterGame({ onExit, onXP }: { onExit: () => void; onXP: (xp: numb
         if (q.options[i] === q.ans) setScore(s => s + 1);
         setTimeout(() => { setPicked(null); if (idx + 1 >= shuffled.length) { setDone(true); onXP(score * 20, `Regex Master: ${score}/${shuffled.length}`); } else setIdx(idx + 1); }, 1000);
     };
-    if (done) return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}><h2>🔤 Regex Master Complete!</h2><div style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--accent)", margin: "20px 0" }}>{score}/{shuffled.length}</div><button className="btn-primary" onClick={onExit}>Back to Games</button></div>);
-    return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto" }}><button className="btn-ghost" onClick={onExit}>← Back</button><h2>🔤 Regex Master · {idx + 1}/{shuffled.length}</h2><div className="card" style={{ textAlign: "center", padding: 20, marginBottom: 16 }}><div style={{ fontSize: "0.88rem", fontWeight: 600 }}>{q.q}</div></div><div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{q.options.map((o, i) => (<button key={i} onClick={() => pick(i)} disabled={picked !== null} style={{ padding: 12, borderRadius: 10, border: `2px solid ${picked === i ? (o === q.ans ? "var(--green)" : "#f87171") : "rgba(163,119,157,0.2)"}`, background: picked === i ? (o === q.ans ? "rgba(86,227,160,0.12)" : "rgba(248,113,113,0.12)") : "transparent", color: "var(--text)", cursor: "pointer", fontWeight: 600, fontSize: "0.82rem", fontFamily: "monospace" }}>{o}</button>))}</div></div>);
+    if (done) return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}><h2 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Type size={24} /> Regex Master Complete!</h2><div style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--accent)", margin: "20px 0" }}>{score}/{shuffled.length}</div><button className="btn-primary" onClick={onExit}>Back to Games</button></div>);
+    return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto" }}><button className="btn-ghost" onClick={onExit}>← Back</button><h2 style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16 }}><Type size={24} /> Regex Master · {idx + 1}/{shuffled.length}</h2><div className="card" style={{ textAlign: "center", padding: 20, marginBottom: 16 }}><div style={{ fontSize: "0.88rem", fontWeight: 600 }}>{q.q}</div></div><div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{q.options.map((o, i) => (<button key={i} onClick={() => pick(i)} disabled={picked !== null} style={{ padding: 12, borderRadius: 10, border: `2px solid ${picked === i ? (o === q.ans ? "var(--green)" : "#f87171") : "rgba(163,119,157,0.2)"}`, background: picked === i ? (o === q.ans ? "rgba(86,227,160,0.12)" : "rgba(248,113,113,0.12)") : "transparent", color: "var(--text)", cursor: "pointer", fontWeight: 600, fontSize: "0.82rem", fontFamily: "monospace" }}>{o}</button>))}</div></div>);
 }
 
 // ──────────────────────────────────────────────────
@@ -479,8 +480,8 @@ function StackBuilderGame({ onExit, onXP }: { onExit: () => void; onXP: (xp: num
         setFeedback(correct ? `✅ Correct! ${task.explain}` : `❌ Wrong. Answer: ${task.expected}. ${task.explain}`);
         setTimeout(() => { setFeedback(""); setAns(""); if (idx + 1 >= shuffled.length) { setDone(true); onXP(score * 25, `Stack Builder: ${score}/${shuffled.length}`); } else setIdx(idx + 1); }, 2500);
     };
-    if (done) return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}><h2>📚 Stack Builder Complete!</h2><div style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--accent)", margin: "20px 0" }}>{score}/{shuffled.length}</div><button className="btn-primary" onClick={onExit}>Back to Games</button></div>);
-    return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto" }}><button className="btn-ghost" onClick={onExit}>← Back</button><h2>📚 Stack Builder · {idx + 1}/{shuffled.length}</h2><div className="card" style={{ padding: 20, marginBottom: 16 }}><div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: 8 }}>Execute these stack operations and tell the result of the last Peek:</div><div style={{ fontFamily: "monospace", fontSize: "1rem", fontWeight: 700, color: "var(--accent)" }}>{task.instr}</div></div>{feedback && <div className="card" style={{ marginBottom: 12, fontSize: "0.82rem", color: feedback.startsWith("✅") ? "var(--green)" : "#f87171" }}>{feedback}</div>}<div style={{ display: "flex", gap: 10 }}><input className="input-field" value={ans} onChange={e => setAns(e.target.value)} placeholder="Your answer..." onKeyDown={e => e.key === "Enter" && submit()} style={{ flex: 1 }} /><button className="btn-primary" onClick={submit}>Submit</button></div></div>);
+    if (done) return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}><h2 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Book size={24} /> Stack Builder Complete!</h2><div style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--accent)", margin: "20px 0" }}>{score}/{shuffled.length}</div><button className="btn-primary" onClick={onExit}>Back to Games</button></div>);
+    return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto" }}><button className="btn-ghost" onClick={onExit}>← Back</button><h2 style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16 }}><Book size={24} /> Stack Builder · {idx + 1}/{shuffled.length}</h2><div className="card" style={{ padding: 20, marginBottom: 16 }}><div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: 8 }}>Execute these stack operations and tell the result of the last Peek:</div><div style={{ fontFamily: "monospace", fontSize: "1rem", fontWeight: 700, color: "var(--accent)" }}>{task.instr}</div></div>{feedback && <div className="card" style={{ marginBottom: 12, fontSize: "0.82rem", color: feedback.startsWith("✅") ? "var(--green)" : "#f87171" }}>{feedback}</div>}<div style={{ display: "flex", gap: 10 }}><input className="input-field" value={ans} onChange={e => setAns(e.target.value)} placeholder="Your answer..." onKeyDown={e => e.key === "Enter" && submit()} style={{ flex: 1 }} /><button className="btn-primary" onClick={submit}>Submit</button></div></div>);
 }
 
 // ──────────────────────────────────────────────────
@@ -506,8 +507,8 @@ function CodeTranslatorGame({ onExit, onXP }: { onExit: () => void; onXP: (xp: n
         if (q.options[i] === q.ans) setScore(s => s + 1);
         setTimeout(() => { setPicked(null); if (idx + 1 >= shuffled.length) { setDone(true); onXP(score * 20, `Translator: ${score}/${shuffled.length}`); } else setIdx(idx + 1); }, 1000);
     };
-    if (done) return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}><h2>🌐 Code Translator Complete!</h2><div style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--accent)", margin: "20px 0" }}>{score}/{shuffled.length}</div><button className="btn-primary" onClick={onExit}>Back to Games</button></div>);
-    return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto" }}><button className="btn-ghost" onClick={onExit}>← Back</button><h2>🌐 Code Translator · {idx + 1}/{shuffled.length}</h2><div className="card" style={{ padding: 20, marginBottom: 16, textAlign: "center" }}><div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginBottom: 8 }}>Translate from <strong style={{ color: "#f472b6" }}>{q.from}</strong> → <strong style={{ color: "var(--green)" }}>{q.to}</strong></div><div style={{ fontFamily: "monospace", fontSize: "1.05rem", fontWeight: 700, color: "#f472b6", background: "rgba(244,114,182,0.08)", borderRadius: 10, padding: "12px 16px" }}>{q.code}</div></div><div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{q.options.map((o, i) => (<button key={i} onClick={() => pick(i)} disabled={picked !== null} style={{ padding: 12, borderRadius: 10, border: `2px solid ${picked === i ? (o === q.ans ? "var(--green)" : "#f87171") : "rgba(163,119,157,0.2)"}`, background: picked === i ? (o === q.ans ? "rgba(86,227,160,0.12)" : "rgba(248,113,113,0.12)") : "transparent", color: "var(--text)", cursor: "pointer", fontWeight: 600, fontSize: "0.82rem", fontFamily: "monospace" }}>{o}</button>))}</div></div>);
+    if (done) return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}><h2 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Globe size={24} /> Code Translator Complete!</h2><div style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--accent)", margin: "20px 0" }}>{score}/{shuffled.length}</div><button className="btn-primary" onClick={onExit}>Back to Games</button></div>);
+    return (<div className="page-enter" style={{ maxWidth: 600, margin: "0 auto" }}><button className="btn-ghost" onClick={onExit}>← Back</button><h2 style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16 }}><Globe size={24} /> Code Translator · {idx + 1}/{shuffled.length}</h2><div className="card" style={{ padding: 20, marginBottom: 16, textAlign: "center" }}><div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginBottom: 8 }}>Translate from <strong style={{ color: "#f472b6" }}>{q.from}</strong> → <strong style={{ color: "var(--green)" }}>{q.to}</strong></div><div style={{ fontFamily: "monospace", fontSize: "1.05rem", fontWeight: 700, color: "#f472b6", background: "rgba(244,114,182,0.08)", borderRadius: 10, padding: "12px 16px" }}>{q.code}</div></div><div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{q.options.map((o, i) => (<button key={i} onClick={() => pick(i)} disabled={picked !== null} style={{ padding: 12, borderRadius: 10, border: `2px solid ${picked === i ? (o === q.ans ? "var(--green)" : "#f87171") : "rgba(163,119,157,0.2)"}`, background: picked === i ? (o === q.ans ? "rgba(86,227,160,0.12)" : "rgba(248,113,113,0.12)") : "transparent", color: "var(--text)", cursor: "pointer", fontWeight: 600, fontSize: "0.82rem", fontFamily: "monospace" }}>{o}</button>))}</div></div>);
 }
 
 // ──────────────────────────────────────────────────
@@ -516,16 +517,16 @@ function CodeTranslatorGame({ onExit, onXP }: { onExit: () => void; onXP: (xp: n
 type GameId = "typing" | "quiz" | "bughunt" | "flashcard" | "pattern" | "algorace" | "sql" | "regex" | "stack" | "translator" | null;
 
 const GAMES = [
-    { id: "typing" as GameId, icon: "⌨️", title: "Typing Speed Race", desc: "Type tech sentences as fast as you can. Score based on WPM and accuracy.", color: "#9b59b6", badge: "Speed", xpRange: "30–80 XP" },
-    { id: "quiz" as GameId, icon: "🧠", title: "Code Quiz", desc: "10 random multiple-choice questions on CS fundamentals, React, SQL, and more.", color: "#56e3a0", badge: "Knowledge", xpRange: "Up to 150 XP" },
-    { id: "bughunt" as GameId, icon: "🐛", title: "Bug Hunt", desc: "Find the bug in real buggy code snippets. Tests your debugging skills.", color: "#f6c94e", badge: "Debugging", xpRange: "35 XP / bug" },
-    { id: "flashcard" as GameId, icon: "🃏", title: "Flashcard Memory", desc: "Flip through 15 tech concept cards, mark what you know. Spaced repetition style.", color: "#7eb8f7", badge: "Memory", xpRange: "10 XP / card" },
-    { id: "pattern" as GameId, icon: "🎯", title: "Pattern Match", desc: "Match JavaScript code snippets to their design pattern names.", color: "#f472b6", badge: "Patterns", xpRange: "20 XP / match" },
-    { id: "algorace" as GameId, icon: "⚡", title: "Algorithm Race", desc: "Guess the time complexity of famous algorithms as fast as you can.", color: "#fbbf24", badge: "Algorithms", xpRange: "20 XP / correct" },
-    { id: "sql" as GameId, icon: "🗄️", title: "SQL Challenge", desc: "Pick the correct SQL query for the given task. Master your database skills.", color: "#34d399", badge: "Database", xpRange: "25 XP / query" },
-    { id: "regex" as GameId, icon: "🔤", title: "Regex Master", desc: "Match the correct regular expression for each pattern description.", color: "#fb923c", badge: "Regex", xpRange: "20 XP / pattern" },
-    { id: "stack" as GameId, icon: "📚", title: "Stack Builder", desc: "Execute stack operations (push, pop, peek) and predict the result.", color: "#a78bfa", badge: "DSA", xpRange: "25 XP / correct" },
-    { id: "translator" as GameId, icon: "🌐", title: "Code Translator", desc: "Translate code snippets between Python and JavaScript.", color: "#67e8f9", badge: "Polyglot", xpRange: "20 XP / translate" },
+    { id: "typing" as GameId, icon: <Keyboard size={28} />, title: "Code Syntax Speed", desc: "Type complex tech sentences to improve muscle memory. Scored by WPM and strict accuracy.", color: "#8b5cf6", badge: "Speed", xpRange: "30–80 XP" },
+    { id: "quiz" as GameId, icon: <Brain size={28} />, title: "CS Fundamentals Assessment", desc: "Advanced multiple-choice on System Design, Data Structures, and Core Architecture.", color: "#10b981", badge: "Knowledge", xpRange: "Up to 150 XP" },
+    { id: "bughunt" as GameId, icon: <Bug size={28} />, title: "Production Bug Hunt", desc: "Identify memory leaks, off-by-one errors, and async issues in real production code.", color: "#f59e0b", badge: "Debugging", xpRange: "35 XP / bug" },
+    { id: "flashcard" as GameId, icon: <BookOpen size={28} />, title: "Spaced Repetition Engine", desc: "Master complex concepts (CAP theorem, Paxos, B-Trees) using spaced repetition.", color: "#3b82f6", badge: "Memory", xpRange: "10 XP / card" },
+    { id: "pattern" as GameId, icon: <Target size={28} />, title: "Design Pattern Match", desc: "Recognize structural and behavioral design patterns in raw code snippets.", color: "#ec4899", badge: "Patterns", xpRange: "20 XP / match" },
+    { id: "algorace" as GameId, icon: <Zap size={28} />, title: "Big-O Algorithm Analysis", desc: "Analyze the time and space complexity of advanced algorithms under time pressure.", color: "#eab308", badge: "Algorithms", xpRange: "20 XP / correct" },
+    { id: "sql" as GameId, icon: <Database size={28} />, title: "Advanced Query Optimizer", desc: "Construct optimal SQL queries involving CTEs, window functions, and complex joins.", color: "#14b8a6", badge: "Database", xpRange: "25 XP / query" },
+    { id: "regex" as GameId, icon: <Type size={28} />, title: "Regex Parsing Engine", desc: "Formulate precise regular expressions to extract complex data patterns.", color: "#f97316", badge: "Regex", xpRange: "20 XP / pattern" },
+    { id: "stack" as GameId, icon: <Book size={28} />, title: "Memory Stack Simulator", desc: "Simulate heap and stack memory operations to predict final execution states.", color: "#a855f7", badge: "DSA", xpRange: "25 XP / correct" },
+    { id: "translator" as GameId, icon: <Globe size={28} />, title: "Cross-Language Compiler", desc: "Translate core logic paradigms between Python, JavaScript, and Go syntax.", color: "#06b6d4", badge: "Polyglot", xpRange: "20 XP / translate" },
 ];
 
 export default function GamificationPage() {
@@ -540,15 +541,15 @@ export default function GamificationPage() {
     };
 
     const challenges = [
-        { label: "Upload Resume", desc: "Activate AI pipeline", done: !!profile?.skills?.length, xp: 100, icon: "📄" },
-        { label: "Complete Interview", desc: "Finish a full mock round", done: typeof window !== "undefined" && !!localStorage.getItem("ciq-interview-done"), xp: 150, icon: "🎤" },
-        { label: "Learn 4 Lessons", desc: "Finish 4 learning lessons", done: typeof window !== "undefined" && !!localStorage.getItem("ciq-lesson-done"), xp: 80, icon: "📚" },
-        { label: "Play Typing Game", desc: "Beat 40 WPM", done: (profile?.xp || 0) >= 50, xp: 80, icon: "⌨️" },
-        { label: "Complete Quiz", desc: "Score 6+ on Code Quiz", done: (profile?.xp || 0) >= 100, xp: 120, icon: "🧠" },
-        { label: "Find 3 Bugs", desc: "Win the Bug Hunt game", done: (profile?.xp || 0) >= 200, xp: 100, icon: "🐛" },
-        { label: "Explore 5 Countries", desc: "Browse global job markets", done: false, xp: 60, icon: "🌍" },
-        { label: "Reach Learner level", desc: "Earn 500+ XP total", done: (profile?.xp || 0) >= 500, xp: 0, icon: "⭐" },
-        { label: "Reach Specialist", desc: "Earn 1500+ XP total", done: (profile?.xp || 0) >= 1500, xp: 0, icon: "🏅" },
+        { label: "Upload Resume", desc: "Activate AI pipeline", done: !!profile?.skills?.length, xp: 100, icon: <FileText size={20} /> },
+        { label: "Complete Interview", desc: "Finish a full mock round", done: typeof window !== "undefined" && !!localStorage.getItem("ciq-interview-done"), xp: 150, icon: <Mic size={20} /> },
+        { label: "Learn 4 Lessons", desc: "Finish 4 learning modules", done: typeof window !== "undefined" && !!localStorage.getItem("ciq-lesson-done"), xp: 80, icon: <Book size={20} /> },
+        { label: "Code Syntax Speed", desc: "Exceed 40 WPM strictly", done: (profile?.xp || 0) >= 50, xp: 80, icon: <Keyboard size={20} /> },
+        { label: "CS Assessment", desc: "Score 6+ on Fundamentals", done: (profile?.xp || 0) >= 100, xp: 120, icon: <Brain size={20} /> },
+        { label: "Find 3 Critical Bugs", desc: "Clear the Production Bug Hunt", done: (profile?.xp || 0) >= 200, xp: 100, icon: <Bug size={20} /> },
+        { label: "Global Market Analysis", desc: "Analyze 5 global job markets", done: false, xp: 60, icon: <Globe size={20} /> },
+        { label: "Reach Engineer Level I", desc: "Accumulate 500+ XP", done: (profile?.xp || 0) >= 500, xp: 0, icon: <Star size={20} /> },
+        { label: "Reach Senior Architect", desc: "Accumulate 1500+ XP", done: (profile?.xp || 0) >= 1500, xp: 0, icon: <Medal size={20} /> },
     ];
 
     if (activeGame === "typing") return <TypingGame onExit={() => setActiveGame(null)} onXP={addXP} />;
@@ -566,50 +567,56 @@ export default function GamificationPage() {
         <div className="page-enter">
             <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 24 }}>
                 <div>
-                    <h1 style={{ marginBottom: 4 }}>🎮 Learning Games & Challenges</h1>
-                    <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>Play interactive games, earn XP, and level up your career</p>
+                    <h1 style={{ marginBottom: 4, display: "flex", alignItems: "center", gap: 10, letterSpacing: "-0.03em" }}>
+                        <Target size={28} color="var(--accent)" /> Advanced Skill Simulations
+                    </h1>
+                    <p style={{ color: "var(--text-sub)", fontSize: "0.9rem", maxWidth: 600, lineHeight: 1.5 }}>
+                        Engage in rigorous technical simulations designed to validate and exponentially improve your engineering competencies.
+                    </p>
                 </div>
-                <div className="stat-card" style={{ minWidth: 160, textAlign: "center" }}>
-                    <div className="stat-label">Total XP</div>
-                    <div style={{ fontSize: "1.8rem", fontWeight: 800, color: "var(--accent)" }}>{profile?.xp || 0}</div>
-                    <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>{profile?.level || "Explorer"}</div>
+                <div className="card liquid-glass" style={{ minWidth: 160, textAlign: "center", padding: "16px 24px", borderColor: "var(--accent-glow)" }}>
+                    <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700 }}>Total XP</div>
+                    <div style={{ fontSize: "2.2rem", fontWeight: 800, color: "var(--accent)", textShadow: "0 0 20px rgba(167,139,250,0.4)" }}>{profile?.xp || 0}</div>
+                    <div style={{ fontSize: "0.75rem", color: "var(--green)", fontWeight: 600 }}>{profile?.level || "L1 Engineer"}</div>
                 </div>
             </div>
 
             {/* Playable Games */}
-            <h2 style={{ marginBottom: 16 }}>🕹️ Play & Learn</h2>
-            <div className="grid-4" style={{ marginBottom: 32 }}>
+            <h2 style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 10, fontSize: "1.2rem", fontWeight: 700 }}><Zap size={20} color="var(--yellow)" /> Technical Assessments</h2>
+            <div className="grid-4" style={{ marginBottom: 40 }}>
                 {GAMES.map(g => (
-                    <div key={g.id} className="card liquid-glass" style={{ cursor: "pointer", borderColor: `${g.color}30`, transition: "all 0.2s" }}
+                    <div key={g.id} className="card liquid-glass" style={{ cursor: "pointer", borderColor: "rgba(255,255,255,0.08)", background: "rgba(20,15,35,0.6)", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)" }}
                         onClick={() => setActiveGame(g.id)}
-                        onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = "translateY(-6px) scale(1.02)"; el.style.borderColor = `${g.color}66`; el.style.boxShadow = `0 12px 40px ${g.color}25`; }}
-                        onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = ""; el.style.borderColor = `${g.color}30`; el.style.boxShadow = ""; }}>
-                        <div style={{ fontSize: "2rem", marginBottom: 10 }}>{g.icon}</div>
-                        <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-                            <span style={{ fontSize: "0.62rem", fontWeight: 700, background: `${g.color}18`, color: g.color, border: `1px solid ${g.color}33`, borderRadius: 20, padding: "2px 8px" }}>{g.badge}</span>
-                            <span style={{ fontSize: "0.62rem", color: "var(--text-muted)", padding: "2px 0" }}>{g.xpRange}</span>
+                        onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = "translateY(-6px)"; el.style.borderColor = `${g.color}50`; el.style.boxShadow = `0 10px 30px ${g.color}15, inset 0 0 20px ${g.color}05`; }}
+                        onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = ""; el.style.borderColor = "rgba(255,255,255,0.08)"; el.style.boxShadow = ""; }}>
+                        <div style={{ marginBottom: 14, color: g.color, display: "inline-flex", padding: 10, borderRadius: 12, background: `${g.color}15` }}>{g.icon}</div>
+                        <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+                            <span style={{ fontSize: "0.65rem", fontWeight: 700, background: `${g.color}15`, color: g.color, border: `1px solid ${g.color}30`, borderRadius: 4, padding: "3px 8px", textTransform: "uppercase" }}>{g.badge}</span>
                         </div>
-                        <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--text)", marginBottom: 6 }}>{g.title}</div>
-                        <div style={{ fontSize: "0.73rem", color: "var(--text-muted)", lineHeight: 1.5, marginBottom: 14 }}>{g.desc}</div>
-                        <button style={{ width: "100%", padding: "8px 0", borderRadius: 9, border: "none", background: `linear-gradient(135deg,${g.color}88,${g.color})`, color: "white", fontWeight: 700, cursor: "pointer", fontSize: "0.8rem" }}>Play Now →</button>
+                        <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--text)", marginBottom: 8, letterSpacing: "-0.02em" }}>{g.title}</div>
+                        <div style={{ fontSize: "0.75rem", color: "var(--text-sub)", lineHeight: 1.6, marginBottom: 18 }}>{g.desc}</div>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: 12 }}>
+                            <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 600 }}>{g.xpRange}</span>
+                            <span style={{ fontSize: "0.75rem", color: g.color, fontWeight: 700 }}>Initialize →</span>
+                        </div>
                     </div>
                 ))}
             </div>
 
             {/* Challenges */}
-            <h2 style={{ marginBottom: 16 }}>🏆 Career Challenges</h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <h2 style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10, fontSize: "1.2rem", fontWeight: 700 }}><Trophy size={20} color="var(--green)" /> Core Competency Checklist</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12 }}>
                 {challenges.map((c, i) => (
-                    <div key={i} className="card" style={{ display: "flex", alignItems: "center", gap: 14, opacity: c.done ? 0.75 : 1, borderColor: c.done ? "rgba(86,227,160,0.25)" : undefined }}>
-                        <div style={{ fontSize: "1.5rem", flexShrink: 0 }}>{c.icon}</div>
+                    <div key={i} className="card" style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 20px", opacity: c.done ? 0.6 : 1, borderColor: c.done ? "rgba(86,227,160,0.15)" : "rgba(255,255,255,0.05)", background: c.done ? "rgba(86,227,160,0.03)" : "var(--surface)" }}>
+                        <div style={{ flexShrink: 0, color: c.done ? "var(--green)" : "var(--accent)" }}>{c.icon}</div>
                         <div style={{ flex: 1 }}>
-                            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 2 }}>
-                                <span style={{ fontWeight: 600, fontSize: "0.88rem", color: c.done ? "var(--text-muted)" : "var(--text)", textDecoration: c.done ? "line-through" : "none" }}>{c.label}</span>
-                                {c.done && <span className="badge-green">✓ Done</span>}
+                            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
+                                <span style={{ fontWeight: 600, fontSize: "0.9rem", color: c.done ? "var(--text-muted)" : "var(--text)", textDecoration: c.done ? "line-through" : "none" }}>{c.label}</span>
+                                {c.done && <span style={{ fontSize: "0.65rem", background: "rgba(86,227,160,0.1)", color: "var(--green)", padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>✓ VERIFIED</span>}
                             </div>
-                            <div style={{ fontSize: "0.73rem", color: "var(--text-muted)" }}>{c.desc}</div>
+                            <div style={{ fontSize: "0.75rem", color: "var(--text-sub)" }}>{c.desc}</div>
                         </div>
-                        {c.xp > 0 && <span className="badge-purple" style={{ flexShrink: 0, fontSize: "0.7rem" }}>+{c.xp} XP</span>}
+                        {c.xp > 0 && !c.done && <span style={{ flexShrink: 0, fontSize: "0.75rem", color: "var(--accent)", fontWeight: 700 }}>+{c.xp} XP</span>}
                     </div>
                 ))}
             </div>

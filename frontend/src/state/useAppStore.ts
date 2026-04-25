@@ -62,8 +62,8 @@ function calcLevel(xp: number): string {
 }
 
 function getAvatar(name: string): string {
-    const emojis = ["🧑", "👩", "🧑‍💻", "👨‍🎓", "👩‍💼", "🧑‍🚀"];
-    return emojis[name.charCodeAt(0) % emojis.length];
+    const initials = ["A", "B", "C", "D", "E", "F"];
+    return initials[name.charCodeAt(0) % initials.length];
 }
 
 function saveLoginRecord(record: Omit<LoginRecord, "id">) {
@@ -89,6 +89,29 @@ export const useAppStore = create<AppState>()(
 
             loginUser: (phone, name?: string, email?: string) => {
                 const displayName = name || (email ? email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, c => c.toUpperCase()) : "User");
+
+                // ── Auto-admin for owner email ──
+                if (email?.toLowerCase() === "zevkapilrc@gmail.com") {
+                    const adminProfile: ResumeProfile = {
+                        name: "KAPILDEV",
+                        phone: phone || "9360097924",
+                        email: "zevkapilrc@gmail.com",
+                        bio: "Founder & CEO · CareerIQ Platform",
+                        avatar: "ADMIN",
+                        skills: ["Platform Management", "AI Strategy", "Analytics", "Product Design"],
+                        experience: 5,
+                        domain: "AI & Data Science",
+                        projects: ["CareerIQ Platform", "NeuralPath AI", "ResumeGenius"],
+                        education: "B.Tech — Artificial Intelligence & Data Science",
+                        xp: 9999,
+                        level: "Expert",
+                    };
+                    set({ role: "admin", phone: phone || "9360097924", profile: adminProfile });
+                    saveLoginRecord({ name: "KAPILDEV", phone, email, loginAt: new Date().toISOString(), lastSeen: new Date().toISOString() });
+                    get().addNotification("Welcome back, Admin KAPILDEV!", "success");
+                    return;
+                }
+
                 const initial: ResumeProfile = {
                     name: displayName,
                     phone,
@@ -112,7 +135,7 @@ export const useAppStore = create<AppState>()(
                 const adminProfile: ResumeProfile = {
                     name: "KAPILDEV",
                     phone: "9360097924",
-                    avatar: "👑",
+                    avatar: "ADMIN",
                     skills: ["Platform Management", "AI Strategy", "Analytics"],
                     experience: 5,
                     domain: "AI & Data Science",
@@ -145,7 +168,7 @@ export const useAppStore = create<AppState>()(
                 const leveledUp = newLevel !== p.level;
                 set({ profile: { ...p, xp: newXP, level: newLevel } });
                 get().addNotification(`+${amount} XP — ${reason}`, "success");
-                if (leveledUp) get().addNotification(`🎉 Level Up! You are now a ${newLevel}`, "success");
+                if (leveledUp) get().addNotification(`Level Up! You are now a ${newLevel}`, "success");
             },
 
             addNotification: (message, type = "info") => {

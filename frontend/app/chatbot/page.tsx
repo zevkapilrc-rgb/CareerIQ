@@ -2,15 +2,17 @@
 import { useState, useRef, useEffect } from "react";
 import { useAppStore } from "@/src/state/useAppStore";
 
+import { Bot, Network, Users, Compass } from "lucide-react";
+
 const mentors = [
-    { id: "helix", name: "NexusAI", role: "Neural Career Processor", icon: "🔮", color: "#a78bfa", tag: "Primary AI — full career intelligence engine" },
-    { id: "aryan", name: "ByteX", role: "Tech Lead & Coding Expert", icon: "🧠", color: "#60a5fa", tag: "Best for coding & system design" },
-    { id: "priya", name: "SoftSkill.io", role: "HR & Communication Coach", icon: "💬", color: "#f472b6", tag: "Best for soft skills & salary negotiation" },
-    { id: "rahul", name: "PathfindrAI", role: "Career Strategist", icon: "🗺️", color: "#34d399", tag: "Best for career growth & planning" },
+    { id: "helix", name: "NexusAI Core", role: "Enterprise Architecture AI", icon: <Bot size={18} />, color: "#a78bfa", tag: "Primary Intelligence Engine" },
+    { id: "aryan", name: "System Architect Analyst", role: "Principal Technical Lead", icon: <Network size={18} />, color: "#60a5fa", tag: "Specialized in System Design & Algorithms" },
+    { id: "priya", name: "Negotiation Director", role: "HR & Compensation Expert", icon: <Users size={18} />, color: "#f472b6", tag: "Specialized in Comp & Soft Skills" },
+    { id: "rahul", name: "Career Strategy Analyst", role: "Career Growth Director", icon: <Compass size={18} />, color: "#34d399", tag: "Specialized in Role Transitions" },
 ];
 
 // ─── OpenAI-style comprehensive response engine ─────────────────────────────
-function generateResponse(input: string, mentorId: string, profile: any): string {
+async function generateResponse(input: string, mentorId: string, profile: any): Promise<string> {
     const q = input.toLowerCase().trim();
     const skills = profile?.skills?.join(", ") || "your current skills";
     const domain = profile?.domain || "Software Development";
@@ -18,18 +20,18 @@ function generateResponse(input: string, mentorId: string, profile: any): string
     const name = profile?.name?.split(" ")?.[0] || "there";
 
     // ── Greetings ──
-    if (/^(hi|hello|hey|hii|good morning|good evening|sup|yo)/.test(q)) {
+    if (/^(hi|hello|hey|hii|good morning|good evening|sup|yo)$/.test(q)) {
         const greetings = [
-            `Hey ${name}! 👋 Great to see you. I'm here to help with your ${domain} career. What's on your mind today — interview prep, salary negotiation, learning path, or something else?`,
-            `Hello ${name}! 😊 I have access to your profile — ${exp} years in ${domain} with skills in ${skills.split(",")[0]}. How can I help you grow today?`,
-            `Hi ${name}! 🚀 Ready to level up your career? Ask me anything — tech questions, career strategy, interview tips, or salary advice.`
+            `Hey ${name}! Great to see you. I'm here to help with your ${domain} career. What's on your mind today — interview prep, salary negotiation, learning path, or something else?`,
+            `Hello ${name}! I have access to your profile — ${exp} years in ${domain} with skills in ${skills.split(",")[0]}. How can I help you grow today?`,
+            `Hi ${name}! Ready to level up your career? Ask me anything — tech questions, career strategy, interview tips, or salary advice.`
         ];
         return greetings[Math.floor(Math.random() * greetings.length)];
     }
 
     // ── How are you / Thanks ──
     if (/how are you|how r u|what'?s up|thanks|thank you|ty|great|awesome/.test(q)) {
-        return `I'm doing great, thanks for asking ${name}! 😄 Always energized when I can help someone on their career journey. What would you like to work on today? You can ask me about:\n\n• 💻 Technical concepts in ${domain}\n• 📄 Resume optimization strategies\n• 🎤 Interview preparation\n• 💰 Salary negotiation tactics\n• 📈 Career growth roadmaps\n• 🌍 Global job market insights`;
+        return `I'm doing great, thanks for asking ${name}! Always energized when I can help someone on their career journey. What would you like to work on today? You can ask me about:\n\n• 💻 Technical concepts in ${domain}\n• 📄 Resume optimization strategies\n• 🎤 Interview preparation\n• 💰 Salary negotiation tactics\n• 📈 Career growth roadmaps\n• 🌍 Global job market insights`;
     }
 
     // ── What can you do ──
@@ -39,70 +41,59 @@ function generateResponse(input: string, mentorId: string, profile: any): string
 
     // ── Salary negotiation ──
     if (/salary|pay|ctc|compensat|hike|raise|negotiate|offer/.test(q)) {
-        if (exp === 0) return `**Fresher Salary Guide for ${domain}** 💰\n\nIn India:\n• Service companies (TCS, Infosys): ₹3.5–6 LPA\n• Startups (Series A+): ₹6–12 LPA\n• Product companies: ₹8–18 LPA\n• FAANG India offices: ₹20–35 LPA\n\nWith your skills in ${skills.split(",").slice(0, 3).join(", ")}, focus on:\n1. **3 strong portfolio projects** with GitHub links\n2. **DSA preparation** (100+ LeetCode problems)\n3. **Target product companies** — they pay 3–4x service companies\n\n**Negotiation script:**\n> "Based on my research and the skills I bring in ${skills.split(",")[0]}, I was expecting around [X]. Is there flexibility?"`;
-        if (exp <= 3) return `**Mid-Level Salary Strategy** 💰\n\n${exp} years in ${domain} puts you in a strong position:\n\n🇮🇳 **India:** ₹12–28 LPA (product companies pay 2x)\n🇺🇸 **USA Remote:** $85–130K/year\n🇬🇧 **UK:** £55–80K/year\n🇸🇬 **Singapore:** SGD 80–115K/year\n\n**How to negotiate effectively:**\n1. Always get competing offers — they're your strongest leverage\n2. Never name your number first: *"I'm more interested in the right opportunity. What's the range?"*\n3. Negotiate total comp: base + bonus + equity + WFH flexibility\n4. Counter 20–25% above your target\n5. Use Levels.fyi and Glassdoor for data-driven negotiation\n\n**With your ${skills.split(",")[0]} skills**, target companies actively hiring in your domain.`;
-        return `**Senior Career Compensation Playbook** 💰\n\nWith ${exp}+ years in ${domain}:\n\n🇮🇳 **India:** ₹25–60 LPA (Director level: ₹80 LPA+)\n🇺🇸 **USA:** $140–200K base + RSU + bonus\n🇬🇧 **UK:** £90–130K\n🇨🇦 **Canada:** CAD $130–180K\n\n**Senior-Level Strategy:**\n• Document your impact with concrete metrics: *"Led migration saving ₹2.4Cr/year"*\n• Build your personal brand (speak at conferences, write LinkedIn articles)\n• Equity is now critical — 30–40% of total comp at your level\n• Consider fractional CTO / consulting roles: ₹3–8 LPA per client\n\nWhat specific situation are you negotiating right now?`;
+        if (exp === 0) return `**Fresher Salary Guide for ${domain}**\n\nIn India:\n• Service companies (TCS, Infosys): ₹3.5–6 LPA\n• Startups (Series A+): ₹6–12 LPA\n• Product companies: ₹8–18 LPA\n• FAANG India offices: ₹20–35 LPA\n\nWith your skills in ${skills.split(",").slice(0, 3).join(", ")}, focus on:\n1. **3 strong portfolio projects** with GitHub links\n2. **DSA preparation** (100+ LeetCode problems)\n3. **Target product companies** — they pay 3–4x service companies\n\n**Negotiation script:**\n> "Based on my research and the skills I bring in ${skills.split(",")[0]}, I was expecting around [X]. Is there flexibility?"`;
+        if (exp <= 3) return `**Mid-Level Salary Strategy**\n\n${exp} years in ${domain} puts you in a strong position:\n\n🇮🇳 **India:** ₹12–28 LPA (product companies pay 2x)\n🇺🇸 **USA Remote:** $85–130K/year\n🇬🇧 **UK:** £55–80K/year\n🇸🇬 **Singapore:** SGD 80–115K/year\n\n**How to negotiate effectively:**\n1. Always get competing offers — they're your strongest leverage\n2. Never name your number first: *"I'm more interested in the right opportunity. What's the range?"*\n3. Negotiate total comp: base + bonus + equity + WFH flexibility\n4. Counter 20–25% above your target\n5. Use Levels.fyi and Glassdoor for data-driven negotiation\n\n**With your ${skills.split(",")[0]} skills**, target companies actively hiring in your domain.`;
+        return `**Senior Career Compensation Playbook**\n\nWith ${exp}+ years in ${domain}:\n\n🇮🇳 **India:** ₹25–60 LPA (Director level: ₹80 LPA+)\n🇺🇸 **USA:** $140–200K base + RSU + bonus\n🇬🇧 **UK:** £90–130K\n🇨🇦 **Canada:** CAD $130–180K\n\n**Senior-Level Strategy:**\n• Document your impact with concrete metrics: *"Led migration saving ₹2.4Cr/year"*\n• Build your personal brand (speak at conferences, write LinkedIn articles)\n• Equity is now critical — 30–40% of total comp at your level\n• Consider fractional CTO / consulting roles: ₹3–8 LPA per client\n\nWhat specific situation are you negotiating right now?`;
     }
 
     // ── Interview prep ──
     if (/interview|interviewee|interviewr|prepare|prep|mock|question/.test(q)) {
-        return `**Complete Interview Preparation Guide for ${domain}** 🎤\n\n**Phase 1 — DSA (2 weeks)**\n• Arrays & Strings: Two pointers, sliding window\n• Trees & Graphs: BFS/DFS, Dijkstra\n• Dynamic Programming: Top 20 patterns\n• Goal: Solve 120+ LeetCode (40% Medium, 20% Hard)\n\n**Phase 2 — System Design (1 week)**\n• Read: "Designing Data-Intensive Applications"\n• Practice designing: URL shortener, Twitter feed, Uber\n• Learn: CAP theorem, consistent hashing, database sharding\n\n**Phase 3 — ${domain} Depth (ongoing)**\n• Internals of ${skills.split(",")[0]}: not just usage, but HOW it works\n• Common: "Why did you use X over Y?"\n• Read source code of libraries you use daily\n\n**Phase 4 — Behavioral (STAR Method)**\nPrepare 7 stories covering:\n1. Leadership under pressure\n2. Technical disagreement resolution\n3. Biggest failure & recovery\n4. Cross-team collaboration success\n5. Delivering under deadline\n\n**Phase 5 — CareerIQ Practice**\nUse the Interview Simulator daily for 2 weeks — the AI scores your real answers.\n\n_What specific type of interview round would you like to dive into?_`;
+        return `**Complete Interview Preparation Guide for ${domain}**\n\n**Phase 1 — DSA (2 weeks)**\n• Arrays & Strings: Two pointers, sliding window\n• Trees & Graphs: BFS/DFS, Dijkstra\n• Dynamic Programming: Top 20 patterns\n• Goal: Solve 120+ LeetCode (40% Medium, 20% Hard)\n\n**Phase 2 — System Design (1 week)**\n• Read: "Designing Data-Intensive Applications"\n• Practice designing: URL shortener, Twitter feed, Uber\n• Learn: CAP theorem, consistent hashing, database sharding\n\n**Phase 3 — ${domain} Depth (ongoing)**\n• Internals of ${skills.split(",")[0]}: not just usage, but HOW it works\n• Common: "Why did you use X over Y?"\n• Read source code of libraries you use daily\n\n**Phase 4 — Behavioral (STAR Method)**\nPrepare 7 stories covering:\n1. Leadership under pressure\n2. Technical disagreement resolution\n3. Biggest failure & recovery\n4. Cross-team collaboration success\n5. Delivering under deadline\n\n**Phase 5 — CareerIQ Practice**\nUse the Interview Simulator daily for 2 weeks — the AI scores your real answers.\n\n_What specific type of interview round would you like to dive into?_`;
     }
 
     // ── Resume tips ──
     if (/resume|cv|curriculum|ats|linkedin|profile/.test(q)) {
-        return `**Resume Optimization for ${domain}** 📄\n\n**Structure (in order):**\n1. Header: Name, Phone, Email, GitHub, LinkedIn\n2. Summary (3 lines): Years + Domain + Top Achievement\n3. Experience (STAR bullets)\n4. Skills (technical only, no "Microsoft Word")\n5. Projects (with impact metrics)\n6. Education\n\n**High-Impact Bullet Formula:**\n> Action verb + What you did + Technology + Measurable result\n\n✅ **Good:** *"Reduced API response time by 62% by implementing Redis caching in Node.js, improving P95 latency from 2.4s to 0.9s"*\n❌ **Weak:** *"Worked on improving backend performance"*\n\n**Your Goal — Mirror Job Descriptions:**\nIf a job says "React + TypeScript + AWS", your resume should prominently feature those exact terms.\n\n**ATS Keywords for ${domain}:**\n${skills.split(",").slice(0, 6).map((s: string) => `• ${s.trim()}`).join("\n")}\n\nUpload your resume in CareerIQ's Resume AI section for a full ATS score analysis.`;
+        return `**Resume Optimization for ${domain}**\n\n**Structure (in order):**\n1. Header: Name, Phone, Email, GitHub, LinkedIn\n2. Summary (3 lines): Years + Domain + Top Achievement\n3. Experience (STAR bullets)\n4. Skills (technical only, no "Microsoft Word")\n5. Projects (with impact metrics)\n6. Education\n\n**High-Impact Bullet Formula:**\n> Action verb + What you did + Technology + Measurable result\n\n✅ **Good:** *"Reduced API response time by 62% by implementing Redis caching in Node.js, improving P95 latency from 2.4s to 0.9s"*\n❌ **Weak:** *"Worked on improving backend performance"*\n\n**Your Goal — Mirror Job Descriptions:**\nIf a job says "React + TypeScript + AWS", your resume should prominently feature those exact terms.\n\n**ATS Keywords for ${domain}:**\n${skills.split(",").slice(0, 6).map((s: string) => `• ${s.trim()}`).join("\n")}\n\nUpload your resume in CareerIQ's Resume AI section for a full ATS score analysis.`;
     }
 
     // ── Python / ML / AI ──
     if (/python|machine learning|ml|ai|deep learning|chatgpt|llm|langchain|tensorflow|pytorch|neural/.test(q)) {
-        return `**AI/ML Fast Track for ${exp > 0 ? `${domain} Professional` : "Beginners"}** 🤖\n\n${exp > 0 ? `Great news — your ${domain} background gives you a massive head start in AI/ML!` : "AI/ML is the highest-paid tech track right now."}\n\n**Month-by-Month Roadmap:**\n\n📅 **Month 1:** Python Foundations\n→ NumPy, Pandas, Matplotlib, Data Cleaning\n→ Goal: Process and visualize a real dataset\n\n📅 **Month 2:** Classical ML\n→ Scikit-learn: Regression, Classification, Clustering\n→ Evaluation: Precision, Recall, F1, AUC-ROC\n→ Build: Churn prediction model\n\n📅 **Month 3:** Deep Learning\n→ PyTorch: Tensors, autograd, training loop\n→ CNNs for images, RNNs for sequences\n→ Build: Image classifier or sentiment analyzer\n\n📅 **Month 4:** Modern AI (LLMs)\n→ Transformer architecture fundamentals\n→ LangChain, RAG systems, vector databases\n→ Fine-tuning with Hugging Face\n→ Build: AI chatbot with your own data\n\n📅 **Month 5–6:** Deploy & Job Hunt\n→ Deploy on Hugging Face Spaces or Replicate\n→ Kaggle competition (silver medal target)\n→ Target: AI Engineer roles — 40% higher pay than traditional dev\n\n**Salary after transition:** ₹20–50 LPA in India, $130–200K in USA`;
+        return `**AI/ML Fast Track for ${exp > 0 ? `${domain} Professional` : "Beginners"}**\n\n${exp > 0 ? `Great news — your ${domain} background gives you a massive head start in AI/ML!` : "AI/ML is the highest-paid tech track right now."}\n\n**Month-by-Month Roadmap:**\n\n📅 **Month 1:** Python Foundations\n→ NumPy, Pandas, Matplotlib, Data Cleaning\n→ Goal: Process and visualize a real dataset\n\n📅 **Month 2:** Classical ML\n→ Scikit-learn: Regression, Classification, Clustering\n→ Evaluation: Precision, Recall, F1, AUC-ROC\n→ Build: Churn prediction model\n\n📅 **Month 3:** Deep Learning\n→ PyTorch: Tensors, autograd, training loop\n→ CNNs for images, RNNs for sequences\n→ Build: Image classifier or sentiment analyzer\n\n📅 **Month 4:** Modern AI (LLMs)\n→ Transformer architecture fundamentals\n→ LangChain, RAG systems, vector databases\n→ Fine-tuning with Hugging Face\n→ Build: AI chatbot with your own data\n\n📅 **Month 5–6:** Deploy & Job Hunt\n→ Deploy on Hugging Face Spaces or Replicate\n→ Kaggle competition (silver medal target)\n→ Target: AI Engineer roles — 40% higher pay than traditional dev\n\n**Salary after transition:** ₹20–50 LPA in India, $130–200K in USA`;
     }
 
     // ── React, TypeScript, JS ──
     if (/react|typescript|javascript|nextjs|next\.js|node|express|vue|angular/.test(q)) {
         const topic = q.includes("react") ? "React" : q.includes("typescript") ? "TypeScript" : q.includes("next") ? "Next.js" : "JavaScript";
-        return `**${topic} Deep Dive** ⚛️\n\nSince you asked about ${topic}, here's what separates junior from senior understanding:\n\n**Fundamentals (must know cold):**\n${topic === "React" ? "• Reconciliation & Virtual DOM — HOW it works\n• Hooks rules & dependency arrays (most interview trips here)\n• Controlled vs uncontrolled components\n• Render optimization: useMemo, useCallback, React.memo\n• Context API vs external state (Zustand/Redux)" : topic === "TypeScript" ? "• Type inference vs annotation — know when to use each\n• Generics & conditional types (advanced interviews)\n• Discriminated unions for type-safe state machines\n• Utility types: Partial, Pick, Omit, Record, Extract\n• Declaration merging & module augmentation" : "• Event loop, call stack, microtasks vs macrotasks\n• Closure, hoisting, prototype chain\n• async/await vs Promises vs callbacks\n• ES6+: destructuring, spread, optional chaining\n• Module system: CommonJS vs ESM"}\n\n**Common Interview Questions:**\n1. Explain [${topic}] reconciliation/type system/closure in simple terms\n2. What's the performance impact of [key concept]?\n3. How would you test ${topic} code?\n\nWould you like a mock interview question on ${topic} right now?`;
-    }
-
-    // ── Career switch / growth ──
-    if (/switch|change career|job change|promotion|grow|next level|senior|lead|manager/.test(q)) {
-        return `**Career Growth Strategy for ${domain}** 📈\n\nWith ${exp} year(s) experience, here's your optimal path:\n\n${exp < 2 ? `**0–2 Years (Foundation Phase):**\n• Depth over breadth — master ${skills.split(",")[0]} and ${skills.split(",")[1] || "one adjacent skill"}\n• Build 3 portfolio projects with real-world problems\n• Contribute to 1 open-source project\n• Target: First job switch at 18 months for 40–60% salary jump\n• Read daily: Medium, Hacker News, official docs` : exp < 5 ? `**2–5 Years (Growth Phase):**\n• Start specializing: pick ONE area to be known for\n• Lead a project end-to-end, even informally\n• Mentor a junior engineer (this accelerates YOUR growth)\n• Build your online presence: LinkedIn + 1 technical article/month\n• Target: Senior title + 50–80% salary jump by year 4\n• Pursue: Google/Meta/Uber — apply even before you "feel ready"` : `**5+ Years (Leadership Phase):**\n• Your technical execution is proven — now build influence\n• Engineer-to-Manager decision: stay IC (Staff/Principal) or go management\n• Staff Engineer path: architecture, cross-team tech strategy\n• Engineering Manager path: hiring, performance, roadmap\n• Consulting side income: 1–2 clients at ₹2–5L/month\n• Target: VP Eng, CTO, or Founding Engineer at a Series A startup`}\n\nWhat specific career move are you planning right now?`;
+        return `**${topic} Deep Dive**\n\nSince you asked about ${topic}, here's what separates junior from senior understanding:\n\n**Fundamentals (must know cold):**\n${topic === "React" ? "• Reconciliation & Virtual DOM — HOW it works\n• Hooks rules & dependency arrays (most interview trips here)\n• Controlled vs uncontrolled components\n• Render optimization: useMemo, useCallback, React.memo\n• Context API vs external state (Zustand/Redux)" : topic === "TypeScript" ? "• Type inference vs annotation — know when to use each\n• Generics & conditional types (advanced interviews)\n• Discriminated unions for type-safe state machines\n• Utility types: Partial, Pick, Omit, Record, Extract\n• Declaration merging & module augmentation" : "• Event loop, call stack, microtasks vs macrotasks\n• Closure, hoisting, prototype chain\n• async/await vs Promises vs callbacks\n• ES6+: destructuring, spread, optional chaining\n• Module system: CommonJS vs ESM"}\n\n**Common Interview Questions:**\n1. Explain [${topic}] reconciliation/type system/closure in simple terms\n2. What's the performance impact of [key concept]?\n3. How would you test ${topic} code?\n\nWould you like a mock interview question on ${topic} right now?`;
     }
 
     // ── DSA / algorithms ──
     if (/dsa|algorithm|data structure|leetcode|array|linked list|tree|graph|dp|dynamic programming|binary/.test(q)) {
-        return `**DSA Mastery Guide** 🔗\n\nHere's the proven system to crack DSA interviews:\n\n**The 5-Pattern Method (covers 80% of problems):**\n\n1️⃣ **Two Pointers** — sorted arrays, looking for pairs\n   → LeetCode: #167, #15, #11, #42\n\n2️⃣ **Sliding Window** — subarrays, substrings\n   → LeetCode: #76, #3, #239, #567\n\n3️⃣ **Binary Search** — sorted data, monotonic functions\n   → LeetCode: #33, #153, #162, #4\n\n4️⃣ **DFS/BFS** — trees, graphs, matrix traversal\n   → LeetCode: #200, #417, #130, #210\n\n5️⃣ **Dynamic Programming** — optimization, counting\n   → LeetCode: #70, #322, #300, #1143\n\n**Daily Practice Plan:**\n• Week 1–2: Easy (arrays, strings) — build confidence\n• Week 3–4: Medium (trees, graphs) — interview level\n• Week 5–6: Hard (DP, advanced graphs) — differentiate yourself\n\n**Mistake to avoid:** Jumping to code immediately. Always spend 5 minutes on:\n1. Understand the problem (edge cases)\n2. Think through approach (verbal)\n3. Analyze complexity BEFORE coding\n\nWhat specific DSA topic would you like a walkthrough on?`;
+        return `**DSA Mastery Guide**\n\nHere's the proven system to crack DSA interviews:\n\n**The 5-Pattern Method (covers 80% of problems):**\n\n1️⃣ **Two Pointers** — sorted arrays, looking for pairs\n   → LeetCode: #167, #15, #11, #42\n\n2️⃣ **Sliding Window** — subarrays, substrings\n   → LeetCode: #76, #3, #239, #567\n\n3️⃣ **Binary Search** — sorted data, monotonic functions\n   → LeetCode: #33, #153, #162, #4\n\n4️⃣ **DFS/BFS** — trees, graphs, matrix traversal\n   → LeetCode: #200, #417, #130, #210\n\n5️⃣ **Dynamic Programming** — optimization, counting\n   → LeetCode: #70, #322, #300, #1143\n\n**Daily Practice Plan:**\n• Week 1–2: Easy (arrays, strings) — build confidence\n• Week 3–4: Medium (trees, graphs) — interview level\n• Week 5–6: Hard (DP, advanced graphs) — differentiate yourself\n\n**Mistake to avoid:** Jumping to code immediately. Always spend 5 minutes on:\n1. Understand the problem (edge cases)\n2. Think through approach (verbal)\n3. Analyze complexity BEFORE coding\n\nWhat specific DSA topic would you like a walkthrough on?`;
     }
 
     // ── System design ──
     if (/system design|architecture|scalab|microservice|kafka|redis|load balancer|database|hld|lld/.test(q)) {
-        return `**System Design Mastery** 🏗️\n\nHere's the framework to approach ANY system design question:\n\n**The RDMA Framework:**\n\n**R — Requirements**\n• Functional: What does the system DO?\n• Non-functional: scale, latency, availability targets\n• Constraints: read-heavy vs write-heavy?\n\n**D — Data Model**\n• Which DB? SQL (relational, ACID) vs NoSQL (flexible, scalable)\n• MongoDB vs PostgreSQL vs Cassandra vs DynamoDB use cases\n• Partitioning strategy: user_id hash, geolocation, time-series\n\n**M — Major Components**\n• API Gateway → Load Balancer → App Servers → DB → Cache\n• CDN for static assets\n• Message queue (Kafka/RabbitMQ) for async processing\n• Redis for sessions, rate limiting, leaderboards\n\n**A — Algorithm & Bottlenecks**\n• Identify the bottleneck: most systems are I/O-bound, not CPU-bound\n• Caching strategy: Cache-aside, Write-through, Write-behind\n• Database: Indexing, query optimization, read replicas\n\n**Example: Design a Twitter-like feed**\n→ Fan-out on write (for small followings) vs fan-out on read (celebrities)\n→ Redis sorted sets for timeline\n→ S3 + CDN for media\n→ Cassandra for tweets (time-series)\n\nWhich specific system would you like to design?`;
+        return `**System Design Mastery**\n\nHere's the framework to approach ANY system design question:\n\n**The RDMA Framework:**\n\n**R — Requirements**\n• Functional: What does the system DO?\n• Non-functional: scale, latency, availability targets\n• Constraints: read-heavy vs write-heavy?\n\n**D — Data Model**\n• Which DB? SQL (relational, ACID) vs NoSQL (flexible, scalable)\n• MongoDB vs PostgreSQL vs Cassandra vs DynamoDB use cases\n• Partitioning strategy: user_id hash, geolocation, time-series\n\n**M — Major Components**\n• API Gateway → Load Balancer → App Servers → DB → Cache\n• CDN for static assets\n• Message queue (Kafka/RabbitMQ) for async processing\n• Redis for sessions, rate limiting, leaderboards\n\n**A — Algorithm & Bottlenecks**\n• Identify the bottleneck: most systems are I/O-bound, not CPU-bound\n• Caching strategy: Cache-aside, Write-through, Write-behind\n• Database: Indexing, query optimization, read replicas\n\n**Example: Design a Twitter-like feed**\n→ Fan-out on write (for small followings) vs fan-out on read (celebrities)\n→ Redis sorted sets for timeline\n→ S3 + CDN for media\n→ Cassandra for tweets (time-series)\n\nWhich specific system would you like to design?`;
     }
 
-    // ── Cloud / DevOps ──
-    if (/aws|gcp|azure|cloud|docker|kubernetes|k8s|devops|ci\/cd|jenkins|terraform/.test(q)) {
-        return `**Cloud & DevOps Career Guide** ☁️\n\nCloud is the most in-demand skill right now — adds ₹5–12 LPA to offers.\n\n**Learning Path (12 weeks):**\n\n☁️ **AWS Foundations (week 1–3):**\n• EC2 (compute), S3 (storage), RDS (database)\n• IAM (security), VPC (networking), Route 53 (DNS)\n• Get: AWS Solutions Architect Associate cert\n\n🐳 **Containers (week 4–6):**\n• Docker: Dockerfile, compose, multi-stage builds\n• Kubernetes: pods, services, deployments, ingress\n• Helm charts for packaging\n\n🔄 **CI/CD (week 7–9):**\n• GitHub Actions: build → test → deploy pipeline\n• Terraform: Infrastructure as Code\n• Monitoring: CloudWatch, Grafana, Prometheus\n\n🚀 **Advanced (week 10–12):**\n• Serverless: Lambda, API Gateway\n• Event-driven: SNS, SQS, EventBridge\n• Cost optimization strategies\n\n**Salary Premium:**\n• AWS Certified SA: +₹4–8 LPA in India, +$15K in USA\n• A DevOps Engineer role pays 20–35% more than a pure Developer\n\nWhich cloud technology are you currently learning?`;
+    // Dynamic Live Fetch from Wikipedia for deeply technical maximum questions
+    try {
+        const term = input.replace(/^(what is|explain|define|how does|what are|tell me about)\s+/i, "").trim().split(" ").slice(0, 4).join(" ");
+        if (term.length > 2) {
+            const url = `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(term)}&limit=1&format=json&origin=*`;
+            const res = await fetch(url);
+            const data = await res.json();
+            if (data && data[1] && data[1].length > 0 && data[2] && data[2][0]) {
+                return `**${data[1][0]}**\n\n${data[2][0]}\n\nThis is a highly advanced technical concept. In real-world ${domain} engineering, understanding the underlying mechanics of ${data[1][0]} allows you to build much more scalable and efficient systems. Do you want to see a specific coding example or implementation of this?`;
+            }
+        }
+    } catch (e) {
+        console.error("Wikipedia fetch failed", e);
     }
 
-    // ── Startups / companies ──
-    if (/startup|faang|google|amazon|microsoft|meta|apple|flipkart|zomato|swiggy|unicorn/.test(q)) {
-        return `**Startup vs Big Tech — The Real Comparison** 🏢\n\n**For ${exp} year(s) in ${domain}:**\n\n| Factor | Big Tech (FAANG) | Startup |\n|--------|----------------|--------|\n| Base Salary | 1.5–2x market | Market or below |\n| Equity | RSUs (liquid) | ESOP (high risk, high reward) |\n| Learning speed | Slower (specialized) | Faster (full-stack everything) |\n| Brand value | Very high | Depends on startup |\n| Impact | Hard to see | Direct & visible |\n| Work-life balance | Generally better | Demanding |\n\n**My recommendation for ${exp > 3 ? "your experience level" : "early career"}:**\n${exp <= 3 ? "🚀 **Join a funded startup (Series A–B)** for maximum learning velocity. The skills you build in 2 startup years equal 4–5 years at a large company in terms of breadth and ownership." : "💰 **Target FAANG or late-stage unicorn.** Your experience makes you competitive. The RSU/salary difference at your level is often ₹20–40 LPA — hard to ignore."}\n\n**How to target FAANG:**\n1. DSA: 150+ LeetCode (40 Hard minimum)\n2. System Design: 3–4 mock designs\n3. Behavioral: Leadership Principles (Amazon) / Googliness (Google)\n4. Resume: Impact-focused, quantified results\n\nWhich company or role are you targeting?`;
-    }
-
-    // ── What is X (education) ──
-    if (/what is|explain|define|meaning|difference between|how does|why is|when to use/.test(q)) {
-        return `Great question! Let me break this down clearly.\n\nBased on your question about "${input}", here's a comprehensive explanation:\n\n**Core Concept:**\nIn the context of ${domain} development, this relates to fundamental principles that every professional should understand deeply.\n\n**Key Points:**\n• Every senior ${domain} engineer is expected to explain core concepts clearly in interviews\n• Understanding WHY something works (not just HOW to use it) is what separates senior from junior\n• Real-world trade-offs matter more than textbook definitions\n\n**Interview Answer Template:**\n> Start with a one-sentence definition → give a concrete example → explain a trade-off or edge case → mention when you'd use it in production\n\n**For a more specific explanation**, could you tell me exactly which concept you want me to break down? For example:\n• A specific language feature or API\n• An architectural pattern\n• A database concept\n• A networking protocol\n\nI'll give you a complete, example-driven explanation.`;
-    }
-
-    // ── Mentor-specific fallbacks ──
-    const fallbacks: Record<string, string> = {
-        aryan: `Solid question! As your ${domain} technical mentor, here's my take:\n\n**The Best Engineers Do These 3 Things:**\n1. **Read code more than they write it** — study open source projects in your stack (${skills.split(",")[0]})\n2. **Understand tradeoffs** — every technical decision is a tradeoff, not a right/wrong answer\n3. **Write about what you learn** — teaching solidifies understanding 10x\n\n**Your immediate action items:**\n• Pick ONE topic from your ${domain} stack to go deep on this week\n• Solve 3 LeetCode mediums daily for 30 days\n• Aim to give a 5-min tech talk to your team next month\n\nWhat exactly would you like to explore deeper? Be specific and I'll give you a complete breakdown!`,
-        priya: `Thanks for reaching out! As your communication and career coach, let me give you actionable advice:\n\n**The Communication Skills That Get You Promoted:**\n\n1. **Clarity over complexity** — Can a non-engineer understand what you built?\n   → Practice explaining your work to family members\n\n2. **Proactive status updates** — Don't wait to be asked\n   → Daily async updates in Slack: "Done X, working on Y, blocked by Z"\n\n3. **Data-driven advocacy** — When proposing ideas, bring numbers\n   → "This refactor will reduce our deployment time by 30%"\n\n4. **Conflict resolution framework:**\n   → Listen → Acknowledge → Share perspective → Propose solution\n\n**What specific situation are you working on?** I can help you script a conversation, prepare for a performance review, or practice a tough negotiation.`,
-        rahul: `Great to hear from you! Let me put on my career strategy hat.\n\n**The ${domain} Career Opportunity Map (2025–2026):**\n\n🔥 **Hottest roles right now:**\n• AI/ML Engineer (+${domain.includes("AI") ? "40" : "60"}% salary premium over traditional roles)\n• Platform/Infrastructure Engineer (DevOps 2.0)\n• Full-Stack with AI integration skills\n\n**For ${exp} year(s) of experience, your best next move is:**\n${exp < 2 ? "→ Land your first role at a product company or Series B+ startup. Do NOT go to a service company unless absolutely necessary." : exp < 5 ? "→ Transition to a Senior role at a company one tier above your current one. The 50–80% salary jump is real." : "→ Evaluate the Staff Engineer vs Engineering Manager fork. Your domain expertise in " + domain + " is a competitive moat."}\n\n**One action you can take TODAY:**\nUpdate your LinkedIn headline from *"Software Engineer"* to *"${skills.split(",")[0]} Engineer | ${domain}"* and turn on Open to Work privately. You'll get 3–5x more recruiter outreach.\n\nWhat career goal can I help you plan for?`
-    };
-
-    return fallbacks[mentorId] || fallbacks.aryan;
+    // Ultimate fallback
+    return `That's a fantastic technical question. As your AI mentor, I can tell you that understanding concepts like "${input}" is exactly what differentiates mid-level from senior engineers.\n\nIn a live setting, I would give you a deep architectural breakdown. For now, what I recommend is building a small Proof-of-Concept (PoC) using this technology. The best way to learn is by doing!`;
 }
 
 export default function ChatbotPage() {
@@ -112,7 +103,7 @@ export default function ChatbotPage() {
 
     const welcome = (id: string) => {
         const m = mentors.find(x => x.id === id)!;
-        return `Hey${profile?.name ? " " + profile.name.split(" ")[0] : ""}! 👋 I'm **${m.name}**, your ${m.role}.\n\n${profile?.domain ? `I can see you're working in **${profile.domain}**${profile.experience ? ` with ${profile.experience} year(s) of experience` : ""}${profile.skills?.length ? ` and skills in ${profile.skills.slice(0, 3).join(", ")}` : ""}. I'll tailor everything to your specific profile.` : "Upload your resume and I'll give you hyper-personalized advice!"}\n\nWhat's on your mind today? Ask me anything — I'm here to give you real, specific answers, not generic advice.`;
+        return `Hey${profile?.name ? " " + profile.name.split(" ")[0] : ""}! I'm **${m.name}**, your ${m.role}.\n\n${profile?.domain ? `I can see you're working in **${profile.domain}**${profile.experience ? ` with ${profile.experience} year(s) of experience` : ""}${profile.skills?.length ? ` and skills in ${profile.skills.slice(0, 3).join(", ")}` : ""}. I'll tailor everything to your specific profile.` : "Upload your resume and I'll give you hyper-personalized advice!"}\n\nWhat's on your mind today? Ask me anything — I'm here to give you real, specific answers, not generic advice.`;
     };
 
     const [messages, setMessages] = useState([{ role: "ai", text: welcome("aryan") }]);
@@ -127,10 +118,10 @@ export default function ChatbotPage() {
         "What salary should I negotiate?",
         "Give me a system design question",
         "How do I switch to AI/ML?",
-        "Help me write a resume bullet point",
+        "Explain quantum computing",
         "What are my interview blind spots?",
         "FAANG vs startup — which is right for me?",
-        "What skills should I learn next?",
+        "What is Kubernetes?",
         "Explain React hooks lifecycle",
     ];
 
@@ -142,7 +133,7 @@ export default function ChatbotPage() {
         setLoading(true);
         // Realistic delay (like real AI)
         await new Promise(r => setTimeout(r, 600 + Math.random() * 900));
-        const response = generateResponse(msg, selected, profile);
+        const response = await generateResponse(msg, selected, profile);
         setMessages(m => [...m, { role: "ai", text: response }]);
         setLoading(false);
         const nc = questionCount + 1;
@@ -157,7 +148,9 @@ export default function ChatbotPage() {
 
     return (
         <div className="page-enter">
-            <h1 style={{ marginBottom: 4 }}>🔮 HelixAI Career Chatbot</h1>
+            <h1 style={{ marginBottom: 4, display: "flex", alignItems: "center", gap: 10 }}>
+                <Bot size={28} color="var(--accent)" /> AI Chatbots
+            </h1>
             <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: 20 }}>Neural Career Processor — context-aware AI mentors with real, specific answers</p>
 
             {/* Mentors */}

@@ -1,622 +1,835 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
-import { useAppStore, ResumeProfile } from "@/src/state/useAppStore";
+
+import React, { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useAppStore } from "@/src/state/useAppStore";
 import { useRouter } from "next/navigation";
+import {
+  UploadCloud,
+  FileText,
+  CheckCircle,
+  AlertTriangle,
+  Briefcase,
+  Target,
+  Brain,
+  Code,
+  TrendingUp,
+  Award,
+  Zap,
+  MessageSquare,
+  UserCheck,
+  Layout,
+  Star,
+  Activity,
+  ChevronRight,
+  Loader2
+} from "lucide-react";
+import {
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid
+} from "recharts";
 
-// ─── Domain detection ───────────────────────────
-const DOMAIN_MAP: Record<string, string[]> = {
-    "Full-Stack Developer": ["react", "node", "express", "nextjs", "typescript", "javascript", "html", "css", "mongodb", "postgresql", "rest", "api", "frontend", "backend"],
-    "AI/ML Engineer": ["python", "tensorflow", "pytorch", "scikit", "machine learning", "deep learning", "nlp", "langchain", "huggingface", "pandas", "numpy", "ml", "ai"],
-    "Data Scientist": ["sql", "pandas", "numpy", "matplotlib", "seaborn", "r", "statistics", "data analysis", "jupyter", "tableau", "powerbi", "bigquery", "spark"],
-    "DevOps Engineer": ["docker", "kubernetes", "aws", "gcp", "azure", "terraform", "ci/cd", "jenkins", "github actions", "linux", "bash", "ansible", "helm"],
-    "Backend Developer": ["python", "java", "spring", "fastapi", "flask", "django", "nodejs", "go", "rust", "microservices", "kafka", "redis", "grpc"],
-    "Mobile Developer": ["flutter", "react native", "ios", "android", "swift", "kotlin", "dart", "expo", "firebase"],
-};
+export default function ResumeIntelligencePage() {
+  const { role, profile, setProfile, addNotification } = useAppStore();
+  const router = useRouter();
+  const [mounted, setMounted] = useState(false);
 
-const CORE_SKILLS: Record<string, string[]> = {
-    "Full-Stack Developer": ["html/css", "javascript", "react", "node.js"],
-    "AI/ML Engineer": ["python", "machine learning", "data structures", "numpy"],
-    "Data Scientist": ["sql", "python", "statistics", "data analysis"],
-    "DevOps Engineer": ["linux", "docker", "ci/cd", "cloud (aws/gcp/azure)"],
-    "Backend Developer": ["programming language", "database", "api design", "data structures"],
-    "Mobile Developer": ["mobile framework", "javascript/dart", "ui design", "api integration"],
-};
+  // Wait for client-side hydration
+  useEffect(() => { setMounted(true); }, []);
 
-function detectDomain(text: string): string {
-    const lower = text.toLowerCase();
-    const scores: Record<string, number> = {};
-    for (const [domain, keywords] of Object.entries(DOMAIN_MAP)) {
-        scores[domain] = keywords.filter(k => lower.includes(k)).length;
+  // Authentication Guard — only run after mounted (zustand hydrated)
+  useEffect(() => {
+    if (!mounted) return;
+    if (role === "guest") {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("ciq-redirect-after-login", "resume");
+      }
+      router.replace("/login");
     }
-    const best = Object.entries(scores).sort((a, b) => b[1] - a[1])[0];
-    return best[1] > 0 ? best[0] : "";
-}
+  }, [role, router, mounted]);
 
-function extractSkills(text: string): string[] {
-    const all = Object.values(DOMAIN_MAP).flat();
-    const lower = text.toLowerCase();
-    const found = Array.from(new Set(all.filter(k => lower.includes(k.toLowerCase()))))
-        .map(s => s.charAt(0).toUpperCase() + s.slice(1));
-    return found.slice(0, 20);
-}
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [status, setStatus] = useState<"upload" | "processing" | "results">("upload");
+  const [progress, setProgress] = useState(0);
+  const [processingStep, setProcessingStep] = useState("");
+  const [data, setData] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState("overview");
 
-function extractExperience(text: string): number {
-    const match = text.match(/(\d+)\s*\+?\s*year/i);
-    return match ? parseInt(match[1]) : 0;
-}
-
-function extractProjects(text: string): string[] {
-    const lines = text.split("\n").filter(l => l.trim().length > 5);
-    return lines.filter(l => /project|built|developed|created|implemented/i.test(l)).slice(0, 4).map(l => l.trim().slice(0, 60));
-}
-
-function calcXP(skills: string[], exp: number): number {
-    return skills.length * 80 + exp * 200 + 300;
-}
-
-// ─── ATS Score Engine ─────────────────────────
-interface ATSScore {
-    total: number;
-    keywords: number;
-    formatting: number;
-    experience: number;
-    skills: number;
-    tips: string[];
-    careerRoadmap: string[];
-}
-
-const POWER_KEYWORDS = ["achieved", "built", "designed", "developed", "engineered", "implemented", "improved", "led", "managed", "optimized", "reduced", "scaled", "shipped", "launched", "increased", "deployed", "architected", "delivered", "created", "owned"];
-const FORMAT_SIGNALS = ["experience", "education", "projects", "skills", "summary", "objective", "certifications", "achievements", "contact"];
-
-function computeATS(text: string, skills: string[], exp: number, domain: string): ATSScore {
-    const lower = text.toLowerCase();
-    // Keywords score: power verbs + domain terms
-    const kwHits = POWER_KEYWORDS.filter(w => lower.includes(w)).length;
-    const keywords = Math.min(100, Math.round((kwHits / POWER_KEYWORDS.length) * 100) + 30);
-    // Formatting score: section headers
-    const fmtHits = FORMAT_SIGNALS.filter(s => lower.includes(s)).length;
-    const formatting = Math.min(100, Math.round((fmtHits / FORMAT_SIGNALS.length) * 100) + 20);
-    // Experience score
-    const experience = Math.min(100, exp * 20 + 40);
-    // Skills score
-    const skillsScore = Math.min(100, skills.length * 6 + 30);
-    const total = Math.round((keywords * 0.35 + formatting * 0.2 + experience * 0.2 + skillsScore * 0.25));
-
-    const tips: string[] = [];
-    if (keywords < 60) tips.push("Add more action verbs (e.g. 'Built', 'Led', 'Optimized') to make achievements stand out");
-    if (formatting < 60) tips.push("Include clear section headers: Summary, Experience, Education, Skills, Projects");
-    if (exp < 1) tips.push("Add internship, freelance, or personal project experience to strengthen your profile");
-    if (skills.length < 6) tips.push("List at least 8–12 specific skills relevant to your target domain");
-    if (total < 70) tips.push("Quantify achievements: use numbers (e.g. 'Improved API speed by 40%', 'Managed 5-person team')");
-    if (!lower.includes("github") && !lower.includes("linkedin")) tips.push("Add GitHub & LinkedIn URLs — ATS systems reward verifiable online presence");
-    if (tips.length === 0) tips.push("Great resume! Consider tailoring keywords to match each specific job description");
-
-    const roadmap = domain ? [
-        `Master ${domain} fundamentals via structured courses`,
-        "Complete 3–5 end-to-end projects and push to GitHub",
-        "Earn a relevant certification (AWS, Google, Microsoft, etc.)",
-        "Contribute to open source or build a portfolio website",
-        "Apply to internships / junior roles and iterate on feedback",
-        "Build your LinkedIn network — engage with recruiters in your domain",
-    ] : [
-        "Identify your target domain and start a structured learning path",
-        "Build and upload your resume to unlock personalized guidance",
+  const handleFile = async (file: File) => {
+    const allowed = [
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/msword",
+      "text/plain"
     ];
-
-    return { total, keywords, formatting, experience: experience, skills: skillsScore, tips, careerRoadmap: roadmap };
-}
-
-// ─── Question generation ───────────────────────
-type QType = "theory" | "practical" | "problem" | "behavioral";
-interface Question { id: number; text: string; type: QType; hint: string; }
-
-function generateQuestions(profile: ResumeProfile): Question[] {
-    const qs: Question[] = [];
-    const skills = profile.skills.slice(0, 6);
-    const domain = profile.domain;
-
-    const theory: [string, string][] = [
-        [`Explain the difference between ${skills[0] || "frontend"} and ${skills[1] || "backend"} development.`, "Cover architecture, responsibilities, and data flow"],
-        [`What are the core principles of ${domain}? Name at least 3.`, "Think about fundamentals, design patterns, and best practices"],
-        [`How does memory management work in ${skills[0] || "your primary language"}?`, "Cover garbage collection, stack/heap, references"],
-        [`Describe the SOLID principles and how you apply them.`, "Name each principle with a real example"],
-        [`What is the difference between REST and GraphQL APIs?`, "Cover structure, querying, pros and cons"],
-    ];
-    const practical: [string, string][] = [
-        [`Walk me through a project where you used ${skills[0] || "your top skill"}. What challenges did you face?`, "Use STAR method: Situation, Task, Action, Result"],
-        [`How would you optimise a slow ${domain} application?`, "Cover profiling, caching, database tuning, lazy loading"],
-        [`You have a bug in production at 3AM. Walk me through your debugging process.`, "Cover logs, monitoring, rollback strategy"],
-        [`Design a ${skills[0] || "scalable"} system that handles 1 million users.`, "Cover load balancing, caching, database sharding"],
-    ];
-    const problem: [string, string][] = [
-        [`Given an array of integers, find the two numbers that sum to a target. Write pseudocode.`, "Consider time/space complexity. Optimal: O(n) with hash map"],
-        [`How would you detect a cycle in a linked list using ${profile.skills.includes("Python") ? "Python" : "your language"}?`, "Floyd's cycle detection algorithm"],
-        [`Reverse a string without using built-in reverse functions.`, "Consider a two-pointer approach"],
-    ];
-    const behavioral: [string, string][] = [
-        [`Tell me about a time you disagreed with your team. How did you handle it?`, "Focus on communication, empathy, and outcome"],
-        [`Describe your biggest technical failure and what you learned.`, "Show self-awareness and growth mindset"],
-    ];
-
-    // 40% theory (2), 30% practical (2), 20% problem (1), 10% behavioral (1) → 6 questions
-    const pick = <T,>(arr: T[], n: number) => arr.sort(() => Math.random() - 0.5).slice(0, n);
-    let id = 1;
-    const add = (arr: [string, string][], type: QType, n: number) =>
-        pick(arr, n).forEach(([text, hint]) => qs.push({ id: id++, text, type, hint }));
-
-    add(theory, "theory", 2);
-    add(practical, "practical", 2);
-    add(problem, "problem", 1);
-    add(behavioral, "behavioral", 1);
-
-    return qs.sort(() => Math.random() - 0.5);
-}
-
-// ─── Scoring ──────────────────────────────────
-function scoreAnswer(answer: string, question: Question, profile: ResumeProfile): number {
-    if (!answer || answer.trim().length < 20) return Math.floor(Math.random() * 15) + 5; // very short = low
-    const words = answer.trim().split(/\s+/).length;
-    let score = 40; // base
-    if (words > 30) score += 15;
-    if (words > 80) score += 10;
-    // keyword bonus
-    const relevant = [...profile.skills, profile.domain.toLowerCase()].map(s => s.toLowerCase());
-    const ansLower = answer.toLowerCase();
-    const hits = relevant.filter(k => ansLower.includes(k)).length;
-    score += Math.min(hits * 8, 25);
-    // bonus for technical terms
-    const techTerms = ["algorithm", "complexity", "o(n)", "database", "cache", "api", "async", "thread", "memory", "scalable", "microservice", "design pattern"];
-    const techHits = techTerms.filter(t => ansLower.includes(t)).length;
-    score += Math.min(techHits * 5, 15);
-    return Math.min(95, Math.max(25, score + Math.floor(Math.random() * 8) - 4));
-}
-
-// ─── Main Component ───────────────────────────
-type Module = "upload" | "processing" | "m1-result" | "m2-gate" | "m2-block" | "m3-interview" | "m3-result";
-
-export default function ResumePage() {
-    const { profile, setProfile, addXP, role } = useAppStore();
-    const router = useRouter();
-
-    // ── Guest guard — redirect to login ──
-    useEffect(() => {
-        if (role === "guest") {
-            router.replace("/login");
-        }
-    }, [role, router]);
-
-    const fileRef = useRef<HTMLInputElement>(null);
-    const [mod, setMod] = useState<Module>("upload");
-    const [rawText, setRawText] = useState("");
-    const [extracted, setExtracted] = useState<Partial<ResumeProfile>>({});
-    const [domain, setDomain] = useState("");
-    const [missingCore, setMissingCore] = useState<string[]>([]);
-    const [ats, setAts] = useState<ATSScore | null>(null);
-    // Interview state
-    const [questions, setQuestions] = useState<Question[]>([]);
-    const [qIdx, setQIdx] = useState(0);
-    const [answers, setAnswers] = useState<string[]>([]);
-    const [currentAnswer, setCurrentAnswer] = useState("");
-    const [timer, setTimer] = useState(120);
-    const [timerActive, setTimerActive] = useState(false);
-    const [scores, setScores] = useState<number[]>([]);
-    const [pasteAttempts, setPasteAttempts] = useState(0);
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-    // Process file reading (simulate extraction for all formats)
-    const handleFile = (file: File) => {
-        const allowed = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/msword", "image/png", "image/jpeg", "image/jpg", "application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation", "text/plain"];
-        if (!allowed.includes(file.type) && !file.name.match(/\.(pdf|docx|doc|png|jpg|jpeg|ppt|pptx|txt)$/i)) {
-            alert("Unsupported format. Please upload PDF, DOCX, PNG, JPG, PPT, or TXT.");
-            return;
-        }
-        setMod("processing");
-        // Simulate extraction (in production, send to backend)
-        setTimeout(() => {
-            // For demo: generate realistic mock data based on filename patterns
-            const demoText = `
-        John Doe | Full-Stack Developer | 3 years experience
-        Skills: React, TypeScript, Node.js, Express, PostgreSQL, Redis, Docker, Python
-        Projects: E-Commerce Platform (React+Node), REST API for FinTech startup, Real-time Chat App
-        Education: B.Tech Computer Science
-        Experience: 3 years building web applications
-      `;
-            const text = demoText; // In prod: extracted from actual file
-            const skills = extractSkills(text);
-            const exp = extractExperience(text);
-            const dom = detectDomain(text);
-            const projects = extractProjects(text);
-            const xp = calcXP(skills, exp);
-            const atsScore = computeATS(text, skills, exp, dom || "Full-Stack Developer");
-            setRawText(text);
-            setDomain(dom || "Full-Stack Developer");
-            setExtracted({ skills, experience: exp, domain: dom || "Full-Stack Developer", projects, xp, name: profile?.name || "User", education: "B.Tech Computer Science", level: "Specialist" });
-            setAts(atsScore);
-            setMod("m1-result");
-        }, 2500);
-    };
-
-    const handleM2Check = () => {
-        const core = CORE_SKILLS[domain] || [];
-        const skillsLower = (extracted.skills || []).map(s => s.toLowerCase());
-        const missing = core.filter(c => !skillsLower.some(s => s.includes(c.toLowerCase().split("/")[0])));
-        setMissingCore(missing);
-        if (missing.length > 0) {
-            setMod("m2-block");
-        } else {
-            // Set profile and proceed
-            const fullProfile: ResumeProfile = { name: profile?.name || "User", ...extracted, level: "Specialist" } as ResumeProfile;
-            setProfile(fullProfile);
-            const qs = generateQuestions(fullProfile);
-            setQuestions(qs);
-            setMod("m3-interview");
-            startTimer();
-        }
-    };
-
-    const startTimer = () => {
-        setTimer(120); setTimerActive(true); setQIdx(0); setAnswers([]); setCurrentAnswer(""); setScores([]);
-        if (timerRef.current) clearInterval(timerRef.current);
-        timerRef.current = setInterval(() => setTimer(t => { if (t <= 1) { autoSubmit(); return 120; } return t - 1; }), 1000);
-    };
-
-    const autoSubmit = () => {
-        submitCurrent();
-    };
-
-    const submitCurrent = () => {
-        if (!profile && !extracted.skills) return;
-        const mockProfile = { ...extracted, name: profile?.name || "User" } as ResumeProfile;
-        const s = scoreAnswer(currentAnswer, questions[qIdx], profile || mockProfile);
-        const newScores = [...scores, s];
-        const newAnswers = [...answers, currentAnswer];
-        setScores(newScores);
-        setAnswers(newAnswers);
-        setCurrentAnswer("");
-        setTimer(120);
-        if (qIdx + 1 >= questions.length) {
-            if (timerRef.current) clearInterval(timerRef.current);
-            setTimerActive(false);
-            setMod("m3-result");
-            const avg = newScores.reduce((a, b) => a + b, 0) / newScores.length;
-            addXP(Math.round(avg * 2), "Interview completed");
-        } else {
-            setQIdx(i => i + 1);
-        }
-    };
-
-    const blockPaste = (e: React.ClipboardEvent) => { e.preventDefault(); setPasteAttempts(p => p + 1); };
-
-    const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
-
-    const typeColor: Record<QType, string> = { theory: "#a78bfa", practical: "#60a5fa", problem: "#34d399", behavioral: "#fbbf24" };
-    const typeLabel: Record<QType, string> = { theory: "Core Theory", practical: "Practical", problem: "Problem Solving", behavioral: "Behavioral" };
-
-    // ── Guest loading state (redirect in progress) ──
-    if (role === "guest") return (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh", flexDirection: "column", gap: 16 }}>
-            <div style={{ width: 48, height: 48, borderRadius: "50%", border: "3px solid rgba(167,139,250,0.3)", borderTopColor: "#a78bfa", animation: "spin 1s linear infinite" }} />
-            <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>Redirecting to login…</p>
-        </div>
-    );
-
-    // ── Upload screen ──
-    if (mod === "upload") return (
-        <div className="page-enter" style={{ maxWidth: 700, margin: "0 auto" }}>
-            <h1 style={{ marginBottom: 4 }}>Resume Intelligence</h1>
-            <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: 32 }}>AI-powered 3-module pipeline: Extract → Validate → Interview</p>
-
-            {/* Pipeline overview */}
-            <div className="grid-3" style={{ marginBottom: 28 }}>
-                {[["🔵", "Module 1", "Resume Intake", "Extract skills, experience & domain"], ["🟡", "Module 2", "Validation Gate", "Check domain readiness & core skills"], ["🟢", "Module 3", "Interview", "AI questions from your resume"]].map(([icon, m, t, d]) => (
-                    <div key={m as string} className="card" style={{ textAlign: "center" }}>
-                        <div style={{ fontSize: "1.6rem", marginBottom: 8 }}>{icon}</div>
-                        <div style={{ fontSize: "0.65rem", color: "var(--accent)", fontWeight: 600, marginBottom: 4 }}>{m}</div>
-                        <div style={{ fontWeight: 600, fontSize: "0.85rem", marginBottom: 4 }}>{t}</div>
-                        <div style={{ fontSize: "0.73rem", color: "var(--text-muted)" }}>{d}</div>
-                    </div>
-                ))}
-            </div>
-
-            {/* Upload */}
-            <div className="card" style={{ textAlign: "center", padding: 48, borderStyle: "dashed", borderColor: "rgba(167,139,250,0.3)", cursor: "pointer", background: "rgba(167,139,250,0.03)" }}
-                onClick={() => fileRef.current?.click()}
-                onDragOver={e => e.preventDefault()}
-                onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}>
-                <div style={{ fontSize: "3rem", marginBottom: 16 }} className="animate-float">📤</div>
-                <h2 style={{ marginBottom: 8 }}>Upload Your Resume</h2>
-                <p style={{ color: "var(--text-muted)", fontSize: "0.82rem", marginBottom: 20 }}>Drag & drop or click to browse</p>
-                <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 20 }}>
-                    {["PDF", "DOCX", "DOC", "PNG", "JPG", "PPT", "PPTX", "TXT"].map(f => <span key={f} className="badge-purple">{f}</span>)}
-                </div>
-                <button className="btn-primary" onClick={e => { e.stopPropagation(); fileRef.current?.click(); }}>Choose File</button>
-                <input ref={fileRef} type="file" style={{ display: "none" }} accept=".pdf,.docx,.doc,.png,.jpg,.jpeg,.ppt,.pptx,.txt,image/*,application/pdf" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
-            </div>
-        </div>
-    );
-
-    // ── Processing ──
-    if (mod === "processing") return (
-        <div style={{ maxWidth: 500, margin: "80px auto", textAlign: "center" }} className="page-enter">
-            <div style={{ width: 80, height: 80, borderRadius: "50%", background: "linear-gradient(135deg,#7c3aed,#a78bfa)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem", margin: "0 auto 24px", animation: "spin 2s linear infinite" }}>🧠</div>
-            <h2 style={{ marginBottom: 8 }}>Analyzing Your Resume</h2>
-            <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: 28 }}>Running AI pipeline: extraction → normalization → domain detection</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {["Extracting text & structure...", "Normalizing skill names...", "Detecting domain..."].map((s, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--surface)", borderRadius: 10, padding: "10px 16px", animation: `fadeIn 0.4s ${i * 0.5}s forwards`, opacity: 0 }}>
-                        <div style={{ width: 18, height: 18, borderRadius: "50%", border: "2px solid var(--accent)", borderTopColor: "transparent", animation: "spin 1s linear infinite" }} />
-                        <span style={{ fontSize: "0.82rem", color: "var(--text-sub)" }}>{s}</span>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-
-    // ── Module 1 Result ──
-    if (mod === "m1-result") return (
-        <div className="page-enter" style={{ maxWidth: 740, margin: "0 auto" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
-                <div className="badge-blue">🔵 Module 1 Complete</div>
-                <h1 style={{ fontSize: "1.2rem" }}>Resume Analysed</h1>
-            </div>
-
-            {/* ── ATS Score Card ── */}
-            {ats && (
-                <div className="card liquid-glass" style={{ marginBottom: 20, borderColor: ats.total >= 70 ? "rgba(86,227,160,0.3)" : ats.total >= 50 ? "rgba(246,201,78,0.3)" : "rgba(248,113,113,0.3)", background: ats.total >= 70 ? "rgba(86,227,160,0.04)" : ats.total >= 50 ? "rgba(246,201,78,0.04)" : "rgba(248,113,113,0.04)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, flexWrap: "wrap", gap: 12 }}>
-                        <div>
-                            <div style={{ fontSize: "0.62rem", color: "var(--text-muted)", fontWeight: 700, letterSpacing: "0.1em", marginBottom: 4 }}>ATS SCORE</div>
-                            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                                <span style={{ fontSize: "3rem", fontWeight: 900, color: ats.total >= 70 ? "var(--green)" : ats.total >= 50 ? "var(--yellow)" : "var(--red)", lineHeight: 1 }}>{ats.total}</span>
-                                <span style={{ fontSize: "1.2rem", color: "var(--text-muted)" }}>/100</span>
-                            </div>
-                            <div style={{ fontSize: "0.78rem", fontWeight: 600, color: ats.total >= 70 ? "var(--green)" : ats.total >= 50 ? "var(--yellow)" : "var(--red)", marginTop: 4 }}>
-                                {ats.total >= 80 ? "🥇 Excellent — ATS Optimised" : ats.total >= 65 ? "✅ Good — Minor improvements needed" : ats.total >= 50 ? "⚠️ Fair — Several areas need work" : "❌ Needs Major Improvement"}
-                            </div>
-                        </div>
-                        {/* Gauge */}
-                        <svg width={90} height={90}>
-                            <circle cx={45} cy={45} r={38} fill="none" stroke="rgba(163,119,157,0.12)" strokeWidth={8} />
-                            <circle cx={45} cy={45} r={38} fill="none" stroke={ats.total >= 70 ? "#56e3a0" : ats.total >= 50 ? "#f6c94e" : "#f87171"} strokeWidth={8}
-                                strokeDasharray={2 * Math.PI * 38} strokeDashoffset={2 * Math.PI * 38 * (1 - ats.total / 100)}
-                                strokeLinecap="round" transform="rotate(-90 45 45)" style={{ transition: "stroke-dashoffset 1s ease" }} />
-                            <text x={45} y={50} textAnchor="middle" fill="#f0e8ff" fontSize={14} fontWeight={800}>{ats.total}%</text>
-                        </svg>
-                    </div>
-
-                    {/* Sub-scores */}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 18 }}>
-                        {([
-                            ["🔑 Keywords", ats.keywords, "Action verbs & domain terms"],
-                            ["📄 Formatting", ats.formatting, "Section headers & structure"],
-                            ["🏆 Experience", ats.experience, "Years & quality of experience"],
-                            ["🛠️ Skills", ats.skills, "Skill variety & relevance"],
-                        ] as [string, number, string][]).map(([label, score, desc]) => (
-                            <div key={label} style={{ background: "rgba(102,51,153,0.08)", borderRadius: 10, padding: "10px 12px" }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                                    <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text)" }}>{label}</span>
-                                    <span style={{ fontSize: "0.75rem", fontWeight: 700, color: score >= 70 ? "var(--green)" : score >= 50 ? "var(--yellow)" : "var(--red)" }}>{score}%</span>
-                                </div>
-                                <div className="progress-track" style={{ height: 5 }}>
-                                    <div className="progress-fill" style={{ width: `${score}%`, background: score >= 70 ? "var(--green)" : score >= 50 ? "var(--yellow)" : "var(--red)" }} />
-                                </div>
-                                <div style={{ fontSize: "0.62rem", color: "var(--text-muted)", marginTop: 4 }}>{desc}</div>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Improvement Tips */}
-                    <div style={{ marginBottom: 16 }}>
-                        <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--accent)", marginBottom: 8, letterSpacing: "0.06em" }}>💡 HOW TO IMPROVE YOUR RESUME</div>
-                        {ats.tips.map((tip, i) => (
-                            <div key={i} style={{ display: "flex", gap: 8, marginBottom: 7, background: "rgba(102,51,153,0.07)", borderRadius: 8, padding: "8px 12px" }}>
-                                <span style={{ color: "var(--accent)", flexShrink: 0 }}>→</span>
-                                <span style={{ fontSize: "0.78rem", color: "var(--text-sub)", lineHeight: 1.5 }}>{tip}</span>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Career Roadmap */}
-                    <div style={{ borderTop: "1px solid rgba(163,119,157,0.12)", paddingTop: 14 }}>
-                        <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--green)", marginBottom: 8, letterSpacing: "0.06em" }}>🗺️ CAREER ROADMAP FOR {(domain || "YOUR DOMAIN").toUpperCase()}</div>
-                        {ats.careerRoadmap.map((step, i) => (
-                            <div key={i} style={{ display: "flex", gap: 10, marginBottom: 6, alignItems: "flex-start" }}>
-                                <div style={{ width: 20, height: 20, borderRadius: "50%", background: "linear-gradient(135deg,#663399,#9b59b6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.65rem", fontWeight: 800, color: "white", flexShrink: 0, marginTop: 1 }}>{i + 1}</div>
-                                <span style={{ fontSize: "0.78rem", color: "var(--text-sub)", lineHeight: 1.6 }}>{step}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            <div className="grid-2 stagger" style={{ marginBottom: 20 }}>
-                <div className="card">
-                    <h3>Detected Domain</h3>
-                    <div style={{ fontSize: "1.3rem", fontWeight: 700, color: "var(--accent)", marginBottom: 8 }}>{domain || "—"}</div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                        <span className="badge-green">✓ Detected</span>
-                        <span className="badge-blue">{extracted.experience || 0} Years Exp</span>
-                    </div>
-                </div>
-                <div className="card">
-                    <h3>XP Earned</h3>
-                    <div style={{ fontSize: "1.3rem", fontWeight: 700, color: "var(--green)", marginBottom: 8 }}>+{extracted.xp} XP</div>
-                    <p style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>From {extracted.skills?.length} skills + {extracted.experience}y exp</p>
-                </div>
-            </div>
-            <div className="card" style={{ marginBottom: 20 }}>
-                <h3>Extracted Skills ({extracted.skills?.length})</h3>
-                <div style={{ display: "flex", flexWrap: "wrap" }}>{extracted.skills?.map(s => <span key={s} className="skill-tag">{s}</span>)}</div>
-            </div>
-            {extracted.projects && extracted.projects.length > 0 && (
-                <div className="card" style={{ marginBottom: 20 }}>
-                    <h3>Detected Projects</h3>
-                    {extracted.projects.map((p, i) => <div key={i} style={{ fontSize: "0.82rem", color: "var(--text-sub)", padding: "6px 0", borderBottom: "1px solid var(--border)" }}>📦 {p}</div>)}
-                </div>
-            )}
-            <div style={{ display: "flex", gap: 12 }}>
-                <button className="btn-primary" onClick={handleM2Check}>Proceed to Module 2 →</button>
-                <button className="btn-ghost" onClick={() => setMod("upload")}>Re-upload</button>
-            </div>
-        </div>
-    );
-
-    // ── Module 2 Block ──
-    if (mod === "m2-block") return (
-        <div className="page-enter" style={{ maxWidth: 600, margin: "0 auto" }}>
-            <div className="card" style={{ background: "rgba(248,113,113,0.06)", borderColor: "rgba(248,113,113,0.3)", textAlign: "center", padding: 32, marginBottom: 20 }}>
-                <div style={{ fontSize: "2.5rem", marginBottom: 12 }}>🚫</div>
-                <h2 style={{ color: "var(--red)", marginBottom: 8 }}>Domain Not Ready for Interview</h2>
-                <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>Missing core skills required for <strong style={{ color: "var(--text)" }}>{domain}</strong>. Complete your learning plan first.</p>
-            </div>
-            <div className="card" style={{ marginBottom: 20 }}>
-                <h3>Missing Core Skills</h3>
-                {missingCore.map(s => (
-                    <div key={s} style={{ padding: "10px 14px", background: "rgba(248,113,113,0.06)", borderRadius: 8, marginBottom: 8, display: "flex", gap: 10, alignItems: "center" }}>
-                        <span style={{ color: "var(--red)" }}>⚠</span>
-                        <div>
-                            <div style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--text)" }}>{s}</div>
-                            <div style={{ fontSize: "0.73rem", color: "var(--text-muted)" }}>Required for {domain}</div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-            <div className="card" style={{ background: "rgba(167,139,250,0.06)", borderColor: "rgba(167,139,250,0.2)" }}>
-                <h3>💡 Learning Plan</h3>
-                <div style={{ color: "var(--accent)", fontStyle: "italic", fontSize: "0.82rem", marginBottom: 12 }}>"Strong fundamentals create strong engineers."</div>
-                {missingCore.map(s => <div key={s} style={{ fontSize: "0.8rem", color: "var(--text-sub)", padding: "4px 0" }}>→ Study: <strong style={{ color: "var(--text)" }}>{s}</strong> fundamentals & practice exercises</div>)}
-                <div style={{ marginTop: 16 }}>
-                    <button className="btn-primary" onClick={() => router.push("/learning")}>Go to Learning Path →</button>
-                </div>
-            </div>
-        </div>
-    );
-
-    // ── Module 3 Interview ──
-    if (mod === "m3-interview" && questions.length > 0) {
-        const q = questions[qIdx];
-        const timerPct = (timer / 120) * 100;
-        const timerColor = timer > 60 ? "var(--green)" : timer > 30 ? "var(--yellow)" : "var(--red)";
-        return (
-            <div className="page-enter vr-container" style={{ maxWidth: 800, margin: "0 auto", padding: 32 }}>
-                <div className="vr-grid" />
-                <div className="vr-glow" style={{ width: 300, height: 300, background: "rgba(124,58,237,0.15)", top: -100, right: -100 }} />
-                <div className="vr-glow" style={{ width: 200, height: 200, background: "rgba(167,139,250,0.1)", bottom: -50, left: -50 }} />
-
-                {/* Header */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28, position: "relative" }}>
-                    <div>
-                        <div style={{ fontSize: "0.65rem", color: "var(--accent)", fontWeight: 600, letterSpacing: "0.1em", marginBottom: 4 }}>🎤 VIRTUAL INTERVIEW SESSION</div>
-                        <h2 style={{ color: "#f1f5f9", margin: 0 }}>Question {qIdx + 1} / {questions.length}</h2>
-                    </div>
-                    {/* Timer */}
-                    <div style={{ textAlign: "center" }}>
-                        <svg width="64" height="64">
-                            <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="4" />
-                            <circle cx="32" cy="32" r="28" fill="none" stroke={timerColor} strokeWidth="4"
-                                strokeDasharray={2 * Math.PI * 28} strokeDashoffset={2 * Math.PI * 28 * (1 - timerPct / 100)}
-                                className="timer-ring" style={{ transition: "stroke-dashoffset 1s linear, stroke 0.5s" }} />
-                            <text x="32" y="37" textAnchor="middle" fill={timerColor} fontSize="13" fontWeight="700">{timer}s</text>
-                        </svg>
-                    </div>
-                    {/* Anti-cheat */}
-                    {pasteAttempts > 0 && <div style={{ position: "absolute", top: -10, right: -10, background: "rgba(248,113,113,0.2)", border: "1px solid rgba(248,113,113,0.4)", borderRadius: 8, padding: "4px 10px", fontSize: "0.7rem", color: "var(--red)" }}>⚠ {pasteAttempts} paste attempt(s) flagged</div>}
-                </div>
-
-                {/* Progress */}
-                <div className="progress-track" style={{ marginBottom: 24 }}>
-                    <div className="progress-fill" style={{ width: `${(qIdx / questions.length) * 100}%` }} />
-                </div>
-
-                {/* Type badge */}
-                <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-                    <span style={{ background: `${typeColor[q.type]}22`, color: typeColor[q.type], border: `1px solid ${typeColor[q.type]}44`, borderRadius: 20, padding: "3px 12px", fontSize: "0.72rem", fontWeight: 600 }}>{typeLabel[q.type]}</span>
-                    <span className="badge-purple">Resume-Based</span>
-                </div>
-
-                {/* Question */}
-                <div style={{ background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.2)", borderRadius: 14, padding: "20px 24px", marginBottom: 20 }}>
-                    <div style={{ fontSize: "0.7rem", color: "var(--accent)", marginBottom: 10, fontWeight: 600 }}>QUESTION {qIdx + 1}</div>
-                    <p style={{ fontSize: "1rem", color: "#f1f5f9", lineHeight: 1.6, margin: 0 }}>{q.text}</p>
-                    <div style={{ marginTop: 12, fontSize: "0.75rem", color: "#6b7280", fontStyle: "italic" }}>💡 Hint: {q.hint}</div>
-                </div>
-
-                {/* Answer */}
-                <textarea
-                    value={currentAnswer}
-                    onChange={e => setCurrentAnswer(e.target.value)}
-                    onPaste={blockPaste}
-                    onCopy={e => e.preventDefault()}
-                    onCut={e => e.preventDefault()}
-                    placeholder="Type your answer here (paste disabled for integrity)..."
-                    style={{ width: "100%", minHeight: 140, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(167,139,250,0.3)", borderRadius: 12, padding: "14px 18px", color: "#e2e8f0", fontSize: "0.88rem", resize: "vertical", outline: "none", fontFamily: "inherit" }}
-                />
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
-                    <div style={{ fontSize: "0.73rem", color: "#6b7280" }}>{currentAnswer.split(/\s+/).filter(Boolean).length} words · typing monitored for integrity</div>
-                    <button className="btn-primary" onClick={submitCurrent} style={{ minWidth: 140 }}>
-                        {qIdx + 1 === questions.length ? "Finish Interview →" : "Submit & Next →"}
-                    </button>
-                </div>
-            </div>
-        );
+    if (!allowed.includes(file.type) && !file.name.match(/\.(pdf|docx|doc|txt)$/i)) {
+      addNotification("Unsupported format. Please upload PDF, DOCX, or TXT.", "warning");
+      return;
     }
 
-    // ── Module 3 Result ──
-    if (mod === "m3-result") {
-        const techScore = scores.filter((_, i) => questions[i]?.type === "theory" || questions[i]?.type === "problem").reduce((a, b, _, arr) => a + b / arr.length, 0);
-        const status = avgScore >= 70 ? "Recommended for Next Round" : avgScore >= 50 ? "Under Review" : "Needs Improvement";
-        const statusColor = avgScore >= 70 ? "var(--green)" : avgScore >= 50 ? "var(--yellow)" : "var(--red)";
-        return (
-            <div className="page-enter" style={{ maxWidth: 700, margin: "0 auto" }}>
-                <div className="card card-glow animate-glow" style={{ textAlign: "center", padding: 36, marginBottom: 20, background: "linear-gradient(135deg,rgba(124,58,237,0.12),rgba(167,139,250,0.06))" }}>
-                    <div style={{ fontSize: "2.5rem", marginBottom: 12 }}>📊</div>
-                    <h1 style={{ marginBottom: 4 }}>Interview Complete!</h1>
-                    <div style={{ fontSize: "3rem", fontWeight: 800, color: statusColor, margin: "12px 0" }}>{avgScore}%</div>
-                    <div style={{ fontSize: "1rem", fontWeight: 600, color: statusColor, marginBottom: 8 }}>Final Status: {status}</div>
-                    <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>Based on {questions.length} questions across all domains</p>
-                    {pasteAttempts > 0 && <div style={{ marginTop: 12 }} className="badge-red">⚠ {pasteAttempts} Paste Attempt(s) — Flagged for Review</div>}
-                </div>
+    setStatus("processing");
+    setProgress(0);
 
-                <div className="grid-2 stagger" style={{ marginBottom: 20 }}>
-                    {[
-                        ["Technical Score", `${Math.round(techScore)}%`, "var(--accent)"],
-                        ["Communication", avgScore >= 60 ? "Good" : "Developing", "var(--blue)"],
-                        ["Interview Score", `${avgScore}%`, statusColor],
-                        ["Plagiarism Risk", pasteAttempts === 0 ? "Low" : "Moderate", pasteAttempts === 0 ? "var(--green)" : "var(--yellow)"],
-                    ].map(([l, v, c]) => (
-                        <div key={l as string} className="stat-card">
-                            <div className="stat-label">{l}</div>
-                            <div style={{ fontSize: "1.5rem", fontWeight: 700, color: c as string }}>{v}</div>
-                        </div>
+    const steps = [
+      "Extracting text & structure...",
+      "Normalizing skill taxonomies...",
+      "Running ATS optimization engine...",
+      "Simulating recruiter impressions...",
+      "Generating career intelligence..."
+    ];
+
+    let currentStep = 0;
+    const interval = setInterval(() => {
+      setProgress((p) => {
+        const newP = p + Math.random() * 15;
+        return newP > 95 ? 95 : newP;
+      });
+      if (currentStep < steps.length) {
+        setProcessingStep(steps[currentStep]);
+        currentStep++;
+      }
+    }, 600);
+
+    try {
+      // Simulate backend API call
+      const res = await fetch("/api/resume/analyze", {
+        method: "POST",
+        // body: formData
+      });
+      const json = await res.json();
+
+      clearInterval(interval);
+      setProgress(100);
+      setProcessingStep("Analysis Complete!");
+
+      setTimeout(() => {
+        setData(json.data);
+        setStatus("results");
+        addNotification("Resume Intelligence Analysis Complete", "success");
+        
+        // Extract domain from API response
+        const suggestedPath = json.data?.careerInsights?.suggestedPath || "";
+        const detectedDomain = suggestedPath.split("->")[0]?.trim() || "Full-Stack Developer";
+        
+        // Build complete profile from the analysis
+        const coreSkills = json.data?.skills?.core || [];
+        const weakSkills = json.data?.skills?.weak || [];
+        const missingSkills = json.data?.skills?.missing || [];
+        const futureSkills = json.data?.skills?.future || [];
+        const atsScore = json.data?.scores?.atsScore || 0;
+        const experience = json.data?.experience?.length || 2;
+        const projects = json.data?.portfolioContent?.projects?.split(", ") || [];
+        const education = json.data?.personalBranding?.linkedInHeadline || "";
+        
+        const updatedProfile = {
+            name: profile?.name || "User",
+            email: profile?.email || "",
+            phone: profile?.phone || "",
+            skills: coreSkills,
+            experience: experience,
+            domain: detectedDomain,
+            projects: projects,
+            education: education,
+            xp: (profile?.xp || 0) + 300,
+            level: profile?.level || "Specialist"
+        };
+
+        // Update profile in global store so other modules become active
+        setProfile(updatedProfile);
+
+        // Save full analysis data to localStorage for dashboard & other modules
+        const fullAnalysis = {
+            ...json.data,
+            detectedDomain,
+            coreSkills,
+            weakSkills,
+            missingSkills,
+            futureSkills,
+            atsScore,
+            timestamp: new Date().toISOString(),
+            profileName: updatedProfile.name,
+            profileEmail: updatedProfile.email,
+        };
+        if (typeof window !== "undefined") {
+            localStorage.setItem("ciq-resume-analysis", JSON.stringify(fullAnalysis));
+        }
+
+        // Send email with resume details for future reference
+        if (updatedProfile.email) {
+            sendResumeEmail(updatedProfile, fullAnalysis);
+        }
+
+      }, 800);
+    } catch (error) {
+      clearInterval(interval);
+      setStatus("upload");
+      addNotification("Analysis failed. Please try again.", "warning");
+    }
+  };
+
+  // Email resume details for future reference
+  const sendResumeEmail = async (prof: any, analysis: any) => {
+    try {
+      const emailBody = {
+        service_id: "service_careeriq",
+        template_id: "template_resume",
+        user_id: "YOUR_EMAILJS_PUBLIC_KEY",
+        template_params: {
+          to_email: prof.email,
+          to_name: prof.name,
+          domain: prof.domain,
+          skills: (analysis.coreSkills || []).join(", "),
+          weak_skills: (analysis.weakSkills || []).join(", "),
+          missing_skills: (analysis.missingSkills || []).join(", "),
+          ats_score: analysis.atsScore || "N/A",
+          experience: prof.experience,
+          career_path: analysis.careerInsights?.suggestedPath || "N/A",
+          recommendations: (analysis.careerInsights?.growthRecommendations || []).join("\n• "),
+          linkedin_headline: analysis.personalBranding?.linkedInHeadline || "",
+          timestamp: new Date().toLocaleString(),
+        }
+      };
+      await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(emailBody),
+      });
+      addNotification("Resume details sent to your email for future reference!", "success");
+    } catch {
+      // Silently fail — email is a bonus feature
+      console.log("Email sending skipped — configure EmailJS keys in production.");
+    }
+  };
+
+  if (role === "guest") return null;
+
+  return (
+    <div className="main-content" style={{ maxWidth: 1400, margin: "0 auto", padding: "2rem" }}>
+      <AnimatePresence mode="wait">
+        {status === "upload" && (
+          <UploadSection key="upload" onUpload={handleFile} fileRef={fileRef} />
+        )}
+        {status === "processing" && (
+          <ProcessingSection key="processing" progress={progress} step={processingStep} />
+        )}
+        {status === "results" && data && (
+          <ResultsSection key="results" data={data} activeTab={activeTab} setActiveTab={setActiveTab} onReset={() => setStatus("upload")} />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UPLOAD SECTION
+// ─────────────────────────────────────────────────────────────────────────────
+function UploadSection({ onUpload, fileRef }: { onUpload: (f: File) => void; fileRef: any }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="flex flex-col items-center justify-center min-h-[70vh] text-center"
+    >
+      <div className="mb-6 relative">
+        <div className="absolute -inset-4 bg-purple-500/20 rounded-full blur-xl animate-pulse" />
+        <div className="bg-gradient-to-br from-purple-600 to-indigo-600 w-20 h-20 rounded-2xl flex items-center justify-center relative z-10 shadow-xl shadow-purple-500/20 border border-white/10">
+          <Brain className="text-white w-10 h-10" />
+        </div>
+      </div>
+
+      <h1 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-200">
+        Resume Intelligence Engine
+      </h1>
+      <p className="text-gray-400 max-w-xl mx-auto mb-10 text-lg leading-relaxed">
+        Upload your resume for a comprehensive 360° AI analysis. We evaluate ATS compatibility,
+        recruiter impact, skill depth, and generate personalized career growth strategies.
+      </p>
+
+      <div
+        className="w-full max-w-2xl bg-white/5 border border-purple-500/30 border-dashed rounded-3xl p-12 cursor-pointer hover:bg-white/[0.08] hover:border-purple-500/50 transition-all duration-300 group"
+        onClick={() => fileRef.current?.click()}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault();
+          if (e.dataTransfer.files[0]) onUpload(e.dataTransfer.files[0]);
+        }}
+      >
+        <UploadCloud className="w-16 h-16 text-purple-400 mx-auto mb-6 group-hover:scale-110 group-hover:text-purple-300 transition-transform duration-300" />
+        <h3 className="text-xl font-semibold text-white mb-2">Drag & Drop Resume</h3>
+        <p className="text-gray-400 text-sm mb-6">Supports PDF, DOCX, TXT (Max 5MB)</p>
+        
+        <button className="bg-purple-600 hover:bg-purple-500 text-white px-8 py-3 rounded-full font-medium transition-colors shadow-lg shadow-purple-500/20">
+          Browse Files
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          className="hidden"
+          accept=".pdf,.docx,.doc,.txt"
+          onChange={(e) => {
+            if (e.target.files?.[0]) onUpload(e.target.files[0]);
+          }}
+        />
+      </div>
+
+      <div className="grid grid-cols-3 gap-6 max-w-3xl mt-16">
+        {[
+          { icon: Target, title: "ATS Optimization", desc: "Beat the bots with keyword alignment" },
+          { icon: Eye, title: "Recruiter View", desc: "Simulate a human review in seconds" },
+          { icon: TrendingUp, title: "Career Insights", desc: "Data-driven growth recommendations" }
+        ].map((f, i) => (
+          <div key={i} className="flex flex-col items-center p-4 rounded-xl bg-white/5 border border-white/10">
+            <f.icon className="w-6 h-6 text-purple-400 mb-3" />
+            <h4 className="text-sm font-semibold text-white mb-1">{f.title}</h4>
+            <p className="text-xs text-gray-400">{f.desc}</p>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROCESSING SECTION
+// ─────────────────────────────────────────────────────────────────────────────
+function ProcessingSection({ progress, step }: { progress: number; step: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 1.05 }}
+      className="flex flex-col items-center justify-center min-h-[70vh]"
+    >
+      <div className="relative w-48 h-48 mb-8">
+        <svg className="w-full h-full transform -rotate-90">
+          <circle cx="96" cy="96" r="88" className="stroke-white/10" strokeWidth="8" fill="none" />
+          <motion.circle
+            cx="96" cy="96" r="88"
+            className="stroke-purple-500"
+            strokeWidth="8"
+            fill="none"
+            strokeDasharray={2 * Math.PI * 88}
+            initial={{ strokeDashoffset: 2 * Math.PI * 88 }}
+            animate={{ strokeDashoffset: 2 * Math.PI * 88 * (1 - progress / 100) }}
+            transition={{ type: "tween", ease: "linear", duration: 0.5 }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <Loader2 className="w-8 h-8 text-purple-400 animate-spin mb-2" />
+          <span className="text-3xl font-bold text-white">{Math.round(progress)}%</span>
+        </div>
+      </div>
+      <h2 className="text-2xl font-bold text-white mb-3">AI Engine Analyzing</h2>
+      <p className="text-purple-300 font-medium animate-pulse">{step}</p>
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RESULTS SECTION
+// ─────────────────────────────────────────────────────────────────────────────
+function ResultsSection({ data, activeTab, setActiveTab, onReset }: any) {
+  const tabs = [
+    { id: "overview", label: "Dashboard Overview", icon: Layout },
+    { id: "advanced", label: "Deep ATS Analytics", icon: Target },
+    { id: "breakdown", label: "Content Breakdown", icon: FileText },
+    { id: "skills", label: "Skill Intelligence", icon: Code },
+    { id: "interview", label: "Interview Prep", icon: MessageSquare },
+    { id: "branding", label: "Personal Branding", icon: Star }
+  ];
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="pb-10">
+      {/* Header */}
+      <div className="flex justify-between items-end mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2">Intelligence Report</h1>
+          <p className="text-gray-400">Comprehensive AI analysis of your professional profile.</p>
+        </div>
+        <button onClick={onReset} className="text-sm px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-white transition-colors border border-white/10">
+          Analyze New Resume
+        </button>
+      </div>
+
+      {/* Navigation */}
+      <div className="flex space-x-2 mb-8 bg-white/5 p-1 rounded-xl border border-white/10 overflow-x-auto">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+              activeTab === tab.id
+                ? "bg-purple-600 text-white shadow-lg"
+                : "text-gray-400 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            <tab.icon className="w-4 h-4 mr-2" />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Content Areas */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.2 }}
+        >
+          {activeTab === "overview" && <OverviewTab data={data} />}
+          {activeTab === "advanced" && <AdvancedAtsTab data={data} />}
+          {activeTab === "breakdown" && <BreakdownTab data={data} />}
+          {activeTab === "skills" && <SkillsTab data={data} />}
+          {activeTab === "interview" && <InterviewTab data={data} />}
+          {activeTab === "branding" && <BrandingTab data={data} />}
+        </motion.div>
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TAB COMPONENTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+function AdvancedAtsTab({ data }: { data: any }) {
+  const adv = data.advancedMetrics;
+  if (!adv) return <div className="text-gray-400">Advanced metrics currently unavailable.</div>;
+
+  return (
+    <div className="space-y-6">
+      {/* Top Section: Competitiveness & Impact */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Competitiveness */}
+        <div className="bg-gradient-to-br from-purple-900/40 to-indigo-900/40 border border-purple-500/30 rounded-2xl p-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 bg-purple-500 text-white text-xs px-3 py-1 rounded-bl-xl font-bold">TOP {100 - adv.competitiveness.percentile}%</div>
+          <h3 className="text-xl font-bold text-white mb-2">Market Competitiveness</h3>
+          <p className="text-purple-200 text-sm mb-6">Compared to 85,000+ {adv.competitiveness.domain} resumes.</p>
+          <div className="flex items-center gap-4">
+            <div className="w-24 h-24 rounded-full border-4 border-purple-500 flex items-center justify-center bg-black/20 shadow-[0_0_20px_rgba(168,85,247,0.4)]">
+              <span className="text-3xl font-black text-white">{adv.competitiveness.percentile}</span>
+            </div>
+            <div>
+              <div className="text-sm text-gray-300 font-medium mb-1">Your Percentile Score</div>
+              <div className="text-xs text-red-300 bg-red-900/30 px-2 py-1 rounded border border-red-500/20 inline-block mt-2">
+                Missing: {adv.competitiveness.topMissingRequirement}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Impact Metrics */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+          <h3 className="text-lg font-semibold text-white mb-2">Impact Quantification</h3>
+          <p className="text-gray-400 text-sm mb-6">Percentage of bullet points containing measurable metrics.</p>
+          
+          <div className="mb-2 flex justify-between text-sm">
+            <span className="text-white font-bold">{adv.impact.percentageQuantified}% Quantified</span>
+            <span className="text-emerald-400 font-bold">Goal: 60%+</span>
+          </div>
+          <div className="w-full bg-white/10 h-3 rounded-full overflow-hidden mb-4">
+            <div className="bg-gradient-to-r from-amber-400 to-emerald-400 h-full" style={{ width: `${adv.impact.percentageQuantified}%` }} />
+          </div>
+          
+          <div className="text-xs text-gray-400 mt-4 border-t border-white/10 pt-4">
+            <span className="font-semibold text-gray-200 mb-2 block">Detected Metrics:</span>
+            <div className="flex flex-wrap gap-2">
+              {adv.impact.detectedMetrics.map((m: string, i: number) => (
+                <span key={i} className="bg-white/10 text-white px-2 py-1 rounded text-[10px] font-mono">{m}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Section: Verbs & Format */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Action Verbs */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Action Verb Analysis</h3>
+          <div className="space-y-4">
+            <div>
+              <div className="text-xs text-emerald-400 font-bold mb-2 uppercase tracking-wide">Strong Verbs Detected</div>
+              <div className="flex flex-wrap gap-2">
+                {adv.actionVerbs.strong.map((v: string, i: number) => (
+                  <span key={i} className="text-xs bg-emerald-500/10 text-emerald-300 px-2 py-1 rounded border border-emerald-500/20">{v}</span>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-red-400 font-bold mb-2 uppercase tracking-wide">Weak Verbs to Replace</div>
+              <div className="flex flex-wrap gap-2">
+                {adv.actionVerbs.weak.map((v: string, i: number) => (
+                  <span key={i} className="text-xs bg-red-500/10 text-red-300 px-2 py-1 rounded border border-red-500/20">{v}</span>
+                ))}
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 mt-2 italic">"{adv.actionVerbs.verdict}"</p>
+          </div>
+        </div>
+
+        {/* Readability & Format */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Readability & Format</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-black/20 rounded-xl p-4 border border-white/5">
+              <div className="text-xs text-gray-400 mb-1">Total Word Count</div>
+              <div className="text-xl font-bold text-white">{adv.readability.wordCount}</div>
+            </div>
+            <div className="bg-black/20 rounded-xl p-4 border border-white/5">
+              <div className="text-xs text-gray-400 mb-1">Reading Level</div>
+              <div className="text-sm font-bold text-emerald-400">{adv.readability.readingLevel}</div>
+            </div>
+            <div className="bg-black/20 rounded-xl p-4 border border-white/5">
+              <div className="text-xs text-gray-400 mb-1">Bullet Length</div>
+              <div className="text-sm font-bold text-emerald-400">{adv.readability.bulletLength}</div>
+            </div>
+            <div className="bg-black/20 rounded-xl p-4 border border-white/5">
+              <div className="text-xs text-gray-400 mb-1">White Space</div>
+              <div className="text-sm font-bold text-amber-400">{adv.readability.whiteSpace}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OverviewTab({ data }: { data: any }) {
+  const scores = data.scores;
+  
+  const radarData = [
+    { subject: 'ATS', A: scores.atsScore, fullMark: 100 },
+    { subject: 'Recruiter', A: scores.recruiterScore, fullMark: 100 },
+    { subject: 'Impact', A: scores.impactScore, fullMark: 100 },
+    { subject: 'Skills', A: scores.skillDepthScore, fullMark: 100 },
+    { subject: 'Consistency', A: scores.careerConsistencyScore, fullMark: 100 },
+  ];
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Score Cards */}
+      <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-5 gap-4">
+        {[
+          { label: "ATS Score", value: scores.atsScore, color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/20" },
+          { label: "Recruiter", value: scores.recruiterScore, color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/20" },
+          { label: "Impact", value: scores.impactScore, color: "text-purple-400", bg: "bg-purple-400/10", border: "border-purple-400/20" },
+          { label: "Skill Depth", value: scores.skillDepthScore, color: "text-pink-400", bg: "bg-pink-400/10", border: "border-pink-400/20" },
+          { label: "Consistency", value: scores.careerConsistencyScore, color: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/20" }
+        ].map((s, i) => (
+          <div key={i} className={`p-5 rounded-2xl border ${s.bg} ${s.border} flex flex-col items-center justify-center text-center`}>
+            <div className="text-xs text-gray-300 font-medium mb-2 uppercase tracking-wider">{s.label}</div>
+            <div className={`text-4xl font-bold ${s.color}`}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Recruiter Simulation */}
+      <div className="lg:col-span-2 bg-white/5 border border-white/10 rounded-2xl p-6">
+        <div className="flex items-center mb-6">
+          <Eye className="w-5 h-5 text-purple-400 mr-2" />
+          <h3 className="text-lg font-semibold text-white">Recruiter Simulation</h3>
+        </div>
+        
+        <div className="bg-purple-900/20 border border-purple-500/20 rounded-xl p-5 mb-6">
+          <div className="text-xs text-purple-300 uppercase tracking-wider font-semibold mb-2">6-Second Impression</div>
+          <p className="text-gray-200 text-lg leading-relaxed">"{data.recruiterSimulation.sixSecondImpression}"</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <div className="text-sm font-semibold text-gray-300 mb-3">Key Concerns</div>
+            <ul className="space-y-3">
+              {data.recruiterSimulation.keyConcerns.map((c: string, i: number) => (
+                <li key={i} className="flex items-start">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 mr-2 flex-shrink-0" />
+                  <span className="text-sm text-gray-400">{c}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <div className="text-sm font-semibold text-gray-300 mb-3">Risk Detection</div>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between items-center pb-2 border-b border-white/5">
+                <span className="text-gray-400">Generic Content</span>
+                <span className="text-emerald-400 font-medium">Low Risk</span>
+              </div>
+              <div className="flex justify-between items-center pb-2 border-b border-white/5">
+                <span className="text-gray-400">Skill Mismatch</span>
+                <span className="text-amber-400 font-medium">Moderate Risk</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400">Timeline Issues</span>
+                <span className="text-emerald-400 font-medium">Low Risk</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Radar Chart */}
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col">
+        <h3 className="text-lg font-semibold text-white mb-2">Profile Balance</h3>
+        <p className="text-xs text-gray-400 mb-4">Multi-dimensional analysis</p>
+        <div className="flex-1 min-h-[250px] -ml-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+              <PolarGrid stroke="rgba(255,255,255,0.1)" />
+              <PolarAngleAxis dataKey="subject" tick={{ fill: '#9ca3af', fontSize: 12 }} />
+              <Radar name="Score" dataKey="A" stroke="#a855f7" fill="#a855f7" fillOpacity={0.4} />
+            </RadarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BreakdownTab({ data }: { data: any }) {
+  return (
+    <div className="space-y-6">
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+        <h3 className="text-lg font-semibold text-white mb-4">Summary Optimization</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="p-4 bg-red-500/5 border border-red-500/10 rounded-xl relative">
+            <div className="absolute top-0 right-0 bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded-bl-xl rounded-tr-xl font-medium">Original</div>
+            <p className="text-gray-300 text-sm leading-relaxed mt-2">{data.summary.original}</p>
+          </div>
+          <div className="p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-xl relative">
+            <div className="absolute top-0 right-0 bg-emerald-500/20 text-emerald-400 text-xs px-2 py-1 rounded-bl-xl rounded-tr-xl font-medium">AI Improved</div>
+            <p className="text-gray-200 text-sm leading-relaxed mt-2">{data.summary.improved}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+        <h3 className="text-lg font-semibold text-white mb-4">Experience Bullet Rewrite</h3>
+        <div className="space-y-6">
+          {data.experience.map((exp: any, idx: number) => (
+            <div key={idx} className="border border-white/5 rounded-xl overflow-hidden bg-black/20">
+              <div className="p-4 border-b border-white/5 flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="text-xs text-red-400 font-semibold mb-1 uppercase">Original (Issues Detected)</div>
+                  <p className="text-gray-400 text-sm">{exp.original}</p>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {exp.issues.map((iss: string, i: number) => (
+                      <span key={i} className="text-[10px] bg-red-500/10 text-red-300 px-2 py-1 rounded border border-red-500/20">{iss}</span>
                     ))}
+                  </div>
                 </div>
-
-                <div className="card" style={{ marginBottom: 20 }}>
-                    <h3>Per-Question Breakdown</h3>
-                    {questions.map((q, i) => (
-                        <div key={i} style={{ display: "flex", gap: 12, padding: "10px 0", borderBottom: i < questions.length - 1 ? "1px solid var(--border)" : "none" }}>
-                            <div style={{ width: 24, height: 24, borderRadius: "50%", background: `${typeColor[q.type]}22`, border: `1px solid ${typeColor[q.type]}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.7rem", color: typeColor[q.type], fontWeight: 700, flexShrink: 0 }}>{i + 1}</div>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: "0.8rem", color: "var(--text)" }}>{q.text.slice(0, 60)}...</div>
-                                <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-                                    <span style={{ fontSize: "0.7rem", color: typeColor[q.type] }}>{typeLabel[q.type]}</span>
-                                    <span style={{ fontSize: "0.7rem", color: scores[i] >= 70 ? "var(--green)" : scores[i] >= 50 ? "var(--yellow)" : "var(--red)", fontWeight: 600 }}>Score: {scores[i]}%</span>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+                <div className="hidden md:flex items-center justify-center px-2">
+                  <ChevronRight className="w-5 h-5 text-purple-500" />
                 </div>
-
-                <div style={{ display: "flex", gap: 12 }}>
-                    <button className="btn-primary" onClick={() => { setMod("upload"); setQIdx(0); setScores([]); }}>Take Another Interview</button>
-                    <button className="btn-ghost" onClick={() => router.push("/dashboard")}>View Dashboard</button>
+                <div className="flex-1 bg-purple-500/5 p-4 rounded-lg border border-purple-500/10">
+                  <div className="text-xs text-emerald-400 font-semibold mb-1 uppercase">Optimized version</div>
+                  <p className="text-gray-200 text-sm leading-relaxed">{exp.improved}</p>
                 </div>
+              </div>
             </div>
-        );
-    }
-
-    return null;
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
+function SkillsTab({ data }: { data: any }) {
+  const sk = data.skills;
+  
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+        <div className="flex items-center mb-6">
+          <CheckCircle className="w-5 h-5 text-emerald-400 mr-2" />
+          <h3 className="text-lg font-semibold text-white">Core Strengths</h3>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {sk.core.map((s: string, i: number) => (
+            <span key={i} className="px-3 py-1.5 bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 rounded-lg text-sm font-medium">
+              {s}
+            </span>
+          ))}
+        </div>
+      </div>
 
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+        <div className="flex items-center mb-6">
+          <AlertTriangle className="w-5 h-5 text-amber-400 mr-2" />
+          <h3 className="text-lg font-semibold text-white">Weak / Unquantified</h3>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {sk.weak.map((s: string, i: number) => (
+            <span key={i} className="px-3 py-1.5 bg-amber-500/10 text-amber-300 border border-amber-500/20 rounded-lg text-sm font-medium">
+              {s}
+            </span>
+          ))}
+        </div>
+        <p className="text-xs text-gray-500 mt-4">These skills lack projects or metrics proving your proficiency.</p>
+      </div>
 
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+        <div className="flex items-center mb-6">
+          <Target className="w-5 h-5 text-red-400 mr-2" />
+          <h3 className="text-lg font-semibold text-white">Missing Keywords</h3>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {sk.missing.map((s: string, i: number) => (
+            <span key={i} className="px-3 py-1.5 bg-red-500/10 text-red-300 border border-red-500/20 rounded-lg text-sm font-medium">
+              + {s}
+            </span>
+          ))}
+        </div>
+        <p className="text-xs text-gray-500 mt-4">Highly requested in your target domain but missing from resume.</p>
+      </div>
+
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+        <div className="flex items-center mb-6">
+          <Zap className="w-5 h-5 text-purple-400 mr-2" />
+          <h3 className="text-lg font-semibold text-white">Future Skills Focus</h3>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {sk.future.map((s: string, i: number) => (
+            <span key={i} className="px-3 py-1.5 bg-purple-500/10 text-purple-300 border border-purple-500/20 rounded-lg text-sm font-medium">
+              {s}
+            </span>
+          ))}
+        </div>
+        <p className="text-xs text-gray-500 mt-4">Learn these to stay ahead of the curve in your industry.</p>
+      </div>
+    </div>
+  );
+}
+
+function InterviewTab({ data }: { data: any }) {
+  const iq = data.interviewQuestions;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+          <div className="flex items-center mb-4 pb-4 border-b border-white/5">
+            <Code className="w-5 h-5 text-blue-400 mr-2" />
+            <h3 className="font-semibold text-white">Technical Questions</h3>
+          </div>
+          <ul className="space-y-4">
+            {iq.technical.slice(0, 3).map((q: string, i: number) => (
+              <li key={i} className="text-sm text-gray-300 leading-relaxed bg-black/20 p-3 rounded-lg border border-white/5">
+                <span className="text-blue-400 font-bold mr-2">Q:</span>{q}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+          <div className="flex items-center mb-4 pb-4 border-b border-white/5">
+            <UserCheck className="w-5 h-5 text-emerald-400 mr-2" />
+            <h3 className="font-semibold text-white">Behavioral / HR</h3>
+          </div>
+          <ul className="space-y-4">
+            {iq.hr.slice(0, 3).map((q: string, i: number) => (
+              <li key={i} className="text-sm text-gray-300 leading-relaxed bg-black/20 p-3 rounded-lg border border-white/5">
+                <span className="text-emerald-400 font-bold mr-2">Q:</span>{q}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+          <div className="flex items-center mb-4 pb-4 border-b border-white/5">
+            <Activity className="w-5 h-5 text-amber-400 mr-2" />
+            <h3 className="font-semibold text-white">Situational</h3>
+          </div>
+          <ul className="space-y-4">
+            {iq.situational.slice(0, 3).map((q: string, i: number) => (
+              <li key={i} className="text-sm text-gray-300 leading-relaxed bg-black/20 p-3 rounded-lg border border-white/5">
+                <span className="text-amber-400 font-bold mr-2">Q:</span>{q}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      
+      <div className="flex justify-center mt-8">
+        <button className="bg-purple-600 hover:bg-purple-500 text-white px-8 py-3 rounded-full font-medium transition-colors shadow-lg shadow-purple-500/20 flex items-center">
+          <MessageSquare className="w-4 h-4 mr-2" />
+          Start Mock Interview Session
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function BrandingTab({ data }: { data: any }) {
+  const brand = data.personalBranding;
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+        <h3 className="text-lg font-semibold text-white mb-6">LinkedIn Optimization</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">Target Headline</div>
+            <div className="bg-black/30 border border-white/10 p-4 rounded-xl text-gray-200 font-medium">
+              {brand.linkedInHeadline}
+            </div>
+          </div>
+          <div>
+            <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">Personal Tagline</div>
+            <div className="bg-black/30 border border-white/10 p-4 rounded-xl text-gray-200 italic">
+              "{brand.tagline}"
+            </div>
+          </div>
+          <div className="md:col-span-2">
+            <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">About Section / Bio</div>
+            <div className="bg-black/30 border border-white/10 p-5 rounded-xl text-gray-300 leading-relaxed text-sm">
+              {brand.shortBio}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-gradient-to-r from-purple-900/40 to-indigo-900/40 border border-purple-500/20 rounded-2xl p-6">
+        <h3 className="text-lg font-semibold text-white mb-2">Your 30-Second Elevator Pitch</h3>
+        <p className="text-sm text-purple-200/70 mb-4">Memorize this for networking events and interviews.</p>
+        <div className="bg-black/40 p-5 rounded-xl text-gray-200 leading-relaxed italic border-l-4 border-purple-500">
+          "{brand.thirtySecondPitch}"
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// A mock Eye icon since we didn't import it from lucide
+function Eye(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}

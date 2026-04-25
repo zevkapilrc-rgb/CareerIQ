@@ -1,8 +1,12 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { useAppStore } from "@/src/state/useAppStore";
+import { Lock } from "lucide-react";
+
 
 // ─── SVG Icon Components ──────────────────────────────────────
 const icons: Record<string, React.ReactNode> = {
@@ -28,8 +32,8 @@ const icons: Record<string, React.ReactNode> = {
 
 const coreModules = [
     { href: "/", iconKey: "home", label: "Home" },
-    { href: "/dashboard", iconKey: "dashboard", label: "Dashboard" },
     { href: "/resume", iconKey: "resume", label: "Resume AI" },
+    { href: "/dashboard", iconKey: "dashboard", label: "Dashboard" },
     { href: "/interview", iconKey: "interview", label: "Interview Sim" },
     { href: "/career-path", iconKey: "careerPath", label: "Career Path" },
     { href: "/skills", iconKey: "skills", label: "Skill Gap" },
@@ -46,11 +50,20 @@ const advanced = [
     { href: "/global-scanner", iconKey: "globalJobs", label: "Global Jobs" },
 ];
 
-function NavLink({ href, iconKey, label, active }: { href: string; iconKey: string; label: string; active: boolean }) {
+function NavLink({ href, iconKey, label, active, isLocked }: { href: string; iconKey: string; label: string; active: boolean; isLocked?: boolean }) {
+    const router = useRouter();
+    const handleClick = (e: React.MouseEvent) => {
+        if (isLocked) {
+            e.preventDefault();
+            alert("Please upload your resume in the Resume AI module first.");
+            router.push("/resume");
+        }
+    };
     return (
-        <Link href={href} className={`sidebar-link ${active ? "active" : ""}`}>
+        <Link href={href} onClick={handleClick} className={`sidebar-link ${active ? "active" : ""} ${isLocked ? "opacity-50 cursor-not-allowed" : ""}`}>
             <span className="icon" style={{ display: "flex", alignItems: "center" }}>{icons[iconKey]}</span>
             {label}
+            {isLocked && <span style={{ marginLeft: "auto", display: "flex", alignItems: "center" }}><Lock size={12} /></span>}
         </Link>
     );
 }
@@ -71,12 +84,50 @@ export default function Sidebar() {
         <aside className="sidebar">
             {/* Logo */}
             <div className="sidebar-logo">
-                <Link href="/" style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: 8 }}>
-                    <img src="/logo.png" alt="CareerIQ" style={{ width: 32, height: 32, borderRadius: 8 }} />
-                    <span style={{ fontSize: "1.2rem", fontWeight: 800, letterSpacing: "-0.02em" }}>
-                        Career<span className="iq">IQ</span>
-                    </span>
-                    <span className="badge">v3</span>
+                <Link href="/" style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", alignItems: "center", padding: "12px 0", marginBottom: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                        <img
+                            src="/logo-minimal.png"
+                            alt="CareerIQ Icon"
+                            style={{ height: 34, width: 34, objectFit: "contain", filter: "drop-shadow(0 4px 12px rgba(167,139,250,0.6))" }}
+                        />
+                        <style>{`
+                            @keyframes glassShine {
+                                0% { background-position: 0% 50%; }
+                                100% { background-position: 200% 50%; }
+                            }
+                        `}</style>
+                        <motion.span 
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ opacity: { duration: 0.8, delay: 0.2 }, x: { duration: 0.8, delay: 0.2 } }}
+                            style={{ 
+                                fontSize: "1.7rem", fontWeight: 900, letterSpacing: "-0.03em", 
+                                background: "linear-gradient(110deg, #a78bfa 35%, #ffffff 50%, #a78bfa 65%)", 
+                                backgroundSize: "200% auto",
+                                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+                                marginTop: 2,
+                                textShadow: "0 0 20px rgba(167,139,250,0.4)",
+                                animation: "glassShine 3s linear infinite"
+                            }}
+                        >
+                            CareerIQ
+                        </motion.span>
+                    </div>
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.6 }}
+                        style={{ 
+                            fontSize: "0.55rem", fontWeight: 800, letterSpacing: "0.22em", 
+                            color: "#a78bfa",
+                            marginTop: 8,
+                            textAlign: "center",
+                            textShadow: "0 0 12px rgba(167,139,250,0.35)"
+                        }}
+                    >
+                        NAVIGATE YOUR FUTURE
+                    </motion.div>
                 </Link>
                 {/* Notification bell */}
                 <Link href="/notifications" style={{ marginLeft: "auto", position: "relative", textDecoration: "none", color: "var(--text-muted)", display: "flex", alignItems: "center" }} onClick={() => markNotificationsRead()}>
@@ -87,10 +138,15 @@ export default function Sidebar() {
                 </Link>
             </div>
 
+
             {/* Nav */}
             <nav style={{ flex: 1, paddingTop: 8, overflowY: "auto" }}>
                 <div className="sidebar-section-label">Core Modules</div>
-                {coreModules.map(l => <NavLink key={l.href} {...l} active={pathname === l.href} />)}
+                {coreModules.map(l => {
+                    const requiresResume = ["/dashboard", "/interview", "/career-path", "/skills", "/learning"].includes(l.href);
+                    const isLocked = requiresResume && (!profile || !profile.skills || profile.skills.length === 0);
+                    return <NavLink key={l.href} {...l} active={pathname === l.href} isLocked={isLocked} />;
+                })}
 
                 <div className="sidebar-section-label">Insights</div>
                 {insights.map(l => <NavLink key={l.href} {...l} active={pathname === l.href} />)}
@@ -112,7 +168,7 @@ export default function Sidebar() {
                 {role === "guest" ? (
                     <NavLink href="/login" iconKey="login" label="Login" active={pathname === "/login"} />
                 ) : (
-                    <button onClick={() => { logout(); router.push("/login"); }} className="sidebar-link" style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", color: "#f87171" }}>
+                    <button onClick={() => { router.push("/login"); setTimeout(() => logout(), 100); }} className="sidebar-link" style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", color: "#f87171" }}>
                         <span className="icon" style={{ display: "flex", alignItems: "center" }}>{icons.logout}</span>Logout
                     </button>
                 )}
@@ -121,13 +177,43 @@ export default function Sidebar() {
             {/* Profile (bottom) */}
             {profile && role !== "guest" ? (
                 <Link href="/profile" style={{ textDecoration: "none" }}>
-                    <div className="sidebar-user" style={{ cursor: "pointer" }}>
-                        <div className="sidebar-avatar" style={{ fontSize: "0.85rem", background: "linear-gradient(135deg,#663399,#9b59b6)", fontWeight: 800 }}>{initials}</div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                            <div className="sidebar-user-name" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile.name}</div>
-                            <div className="sidebar-user-role">{profile.level} · {profile.xp} XP</div>
+                    <div style={{ 
+                        cursor: "pointer", 
+                        background: "linear-gradient(135deg, rgba(167,139,250,0.1), rgba(0,0,0,0.2))",
+                        border: "1px solid rgba(167,139,250,0.25)",
+                        borderRadius: "14px",
+                        padding: "12px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        transition: "all 0.3s ease",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                        position: "relative",
+                        overflow: "hidden"
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "linear-gradient(135deg, rgba(167,139,250,0.18), rgba(0,0,0,0.3))";
+                        e.currentTarget.style.borderColor = "rgba(167,139,250,0.5)";
+                        e.currentTarget.style.boxShadow = "0 8px 24px rgba(124,58,237,0.25)";
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "linear-gradient(135deg, rgba(167,139,250,0.1), rgba(0,0,0,0.2))";
+                        e.currentTarget.style.borderColor = "rgba(167,139,250,0.25)";
+                        e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
+                    }}
+                    >
+                        <div style={{ position: "absolute", top: -20, right: -20, width: 60, height: 60, background: "radial-gradient(circle, rgba(167,139,250,0.2) 0%, transparent 70%)", pointerEvents: "none" }} />
+                        <div style={{ fontSize: "1.2rem", background: "linear-gradient(135deg,#7c3aed,#a78bfa)", width: 40, height: 40, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 10px rgba(124,58,237,0.4)", flexShrink: 0 }}>
+                            {profile.avatar || "🧑"}
                         </div>
-                        <div style={{ fontSize: "0.7rem", color: "rgba(163,119,157,0.6)" }}>→</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "0.85rem", fontWeight: 700, color: "#f8fafc", marginBottom: 2 }}>{profile.name}</div>
+                            <div style={{ fontSize: "0.7rem", color: "rgba(167,139,250,0.9)", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#34d399", display: "inline-block", boxShadow: "0 0 8px #34d399" }} />
+                                {profile.level} · {profile.xp} XP
+                            </div>
+                        </div>
+                        <div style={{ fontSize: "0.8rem", color: "rgba(167,139,250,0.8)", fontWeight: 800 }}>→</div>
                     </div>
                 </Link>
 

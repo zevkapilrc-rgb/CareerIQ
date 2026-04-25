@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const WS_URL = "ws://localhost:8000/ws/notifications";
-
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || (process.env.NODE_ENV === "production" ? "wss://" + (typeof window !== "undefined" ? window.location.host : "") + "/api/ws/notifications" : "ws://localhost:8000/ws/notifications");
 type Notification = {
   type: string;
   message: string;

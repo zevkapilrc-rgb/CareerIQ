@@ -5,7 +5,7 @@ import Sidebar from "@/src/components/Sidebar";
 import MainContent from "@/src/components/MainContent";
 
 export const metadata = {
-  title: "CareerIQ v3 — AI Career Growth Engine",
+  title: "CareerIQ - Navigate your future",
   description: "AI-powered career intelligence platform",
 };
 

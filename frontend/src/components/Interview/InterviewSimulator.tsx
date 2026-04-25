@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useAppStore } from "../../state/useAppStore";
+import { Mic, Check, ClipboardList, Loader2, Rocket, Clock, ArrowRight, PartyPopper, RefreshCw, RotateCcw } from "lucide-react";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === "production" ? "/api" : "http://localhost:8000");
 
 // Randomised question bank – questions chosen based on role
 const QUESTION_BANK: Record<string, string[]> = {
@@ -165,7 +166,7 @@ export default function InterviewSimulator() {
   if (phase === "setup") return (
     <section style={{ borderRadius: 20, border: "1px solid rgba(163,119,157,0.2)", background: "rgba(18,10,34,0.6)", backdropFilter: "blur(20px)", padding: 28, maxWidth: 620, margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 12, background: "linear-gradient(135deg,#663399,#9b59b6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem" }}>🎤</div>
+        <div style={{ width: 40, height: 40, borderRadius: 12, background: "linear-gradient(135deg,#663399,#9b59b6)", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}><Mic size={20} /></div>
         <div>
           <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800 }}>AI Interview Simulator</h2>
           <p style={{ margin: 0, fontSize: "0.72rem", color: "rgba(163,119,157,0.7)" }}>Powered by HelixAI · Questions based on your resume</p>
@@ -183,7 +184,7 @@ export default function InterviewSimulator() {
             style={{ width: "100%" }}
           />
           {profile?.domain && (
-            <p style={{ fontSize: "0.65rem", color: "rgba(86,227,160,0.8)", marginTop: 4 }}>✓ Pre-filled from your resume: <strong>{profile.domain}</strong></p>
+            <p style={{ fontSize: "0.65rem", color: "rgba(86,227,160,0.8)", marginTop: 4, display: "flex", alignItems: "center" }}><Check size={12} className="mr-1" /> Pre-filled from your resume: <strong>{profile.domain}</strong></p>
           )}
         </div>
         <div>
@@ -199,7 +200,7 @@ export default function InterviewSimulator() {
       </div>
 
       <div style={{ background: "rgba(102,51,153,0.08)", border: "1px solid rgba(163,119,157,0.12)", borderRadius: 12, padding: "12px 16px", marginBottom: 20 }}>
-        <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "rgba(163,119,157,0.7)", marginBottom: 6 }}>📋 WHAT TO EXPECT</div>
+        <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "rgba(163,119,157,0.7)", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}><ClipboardList size={14} /> WHAT TO EXPECT</div>
         <div style={{ fontSize: "0.75rem", color: "rgba(240,232,255,0.7)", lineHeight: 1.7 }}>
           • 8 randomised interview questions for your role<br />
           • 90 seconds to think & type each answer<br />
@@ -215,7 +216,7 @@ export default function InterviewSimulator() {
         onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)"; }}
         onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = ""; }}
       >
-        {loading ? "⏳ Preparing questions..." : "🚀 Start Interview Session"}
+        {loading ? <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Loader2 className="animate-spin" size={16} /> Preparing questions...</span> : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Rocket size={16} /> Start Interview Session</span>}
       </button>
     </section>
   );
@@ -227,11 +228,11 @@ export default function InterviewSimulator() {
       <section style={{ borderRadius: 20, border: "1px solid rgba(163,119,157,0.2)", background: "rgba(18,10,34,0.6)", backdropFilter: "blur(20px)", padding: 28, maxWidth: 620, margin: "0 auto" }}>
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <div style={{ fontSize: "0.72rem", color: "rgba(163,119,157,0.7)", fontWeight: 600 }}>
-            🎤 {role} · {seniority}
+          <div style={{ fontSize: "0.72rem", color: "rgba(163,119,157,0.7)", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+            <Mic size={14} /> {role} · {seniority}
           </div>
-          <div style={{ fontFamily: "monospace", fontSize: "0.88rem", fontWeight: 700, color: timerColor, background: `${timerColor}15`, border: `1px solid ${timerColor}30`, borderRadius: 8, padding: "3px 10px" }}>
-            ⏱ {timer}s
+          <div style={{ fontFamily: "monospace", fontSize: "0.88rem", fontWeight: 700, color: timerColor, background: `${timerColor}15`, border: `1px solid ${timerColor}30`, borderRadius: 8, padding: "3px 10px", display: "flex", alignItems: "center", gap: 4 }}>
+            <Clock size={12} /> {timer}s
           </div>
         </div>
 
@@ -287,7 +288,7 @@ export default function InterviewSimulator() {
             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; }}
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = ""; }}
           >
-            {currentIdx + 1 < questions.length ? "Next Question →" : "Finish Interview ✓"}
+            {currentIdx + 1 < questions.length ? <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>Next Question <ArrowRight size={14} /></span> : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>Finish Interview <Check size={14} /></span>}
           </button>
           <button
             onClick={() => { setCurrentAnswer(""); submitAnswer(); }}
@@ -304,7 +305,7 @@ export default function InterviewSimulator() {
   return (
     <section style={{ borderRadius: 20, border: "1px solid rgba(86,227,160,0.25)", background: "rgba(18,10,34,0.6)", backdropFilter: "blur(20px)", padding: 28, maxWidth: 620, margin: "0 auto" }}>
       <div style={{ textAlign: "center", marginBottom: 24 }}>
-        <div style={{ fontSize: "3rem", marginBottom: 8 }}>🎉</div>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}><PartyPopper size={48} color="var(--accent)" /></div>
         <h2 style={{ margin: 0, fontWeight: 800 }}>Interview Complete!</h2>
         <p style={{ color: "rgba(163,119,157,0.7)", fontSize: "0.8rem", margin: "8px 0 0" }}>
           You answered {answers.filter(a => a !== "(Skipped)").length}/{questions.length} questions · {role} · {seniority}
@@ -331,15 +332,15 @@ export default function InterviewSimulator() {
       <div style={{ display: "flex", gap: 10 }}>
         <button
           onClick={() => { setPhase("setup"); setAnswers([]); setCurrentIdx(0); }}
-          style={{ flex: 1, padding: "12px 0", borderRadius: 11, border: "none", background: "linear-gradient(135deg,#663399,#9b59b6)", color: "white", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer" }}
+          style={{ flex: 1, padding: "12px 0", borderRadius: 11, border: "none", background: "linear-gradient(135deg,#663399,#9b59b6)", color: "white", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
         >
-          🔄 New Session
+          <RefreshCw size={16} /> New Session
         </button>
         <button
           onClick={() => { setQuestions(getQuestionsForRole(role)); setAnswers([]); setCurrentIdx(0); setCurrentAnswer(""); setTimer(90); setPhase("interview"); }}
-          style={{ flex: 1, padding: "12px 0", borderRadius: 11, border: "1px solid rgba(163,119,157,0.3)", background: "transparent", color: "#f0e8ff", fontWeight: 600, fontSize: "0.88rem", cursor: "pointer" }}
+          style={{ flex: 1, padding: "12px 0", borderRadius: 11, border: "1px solid rgba(163,119,157,0.3)", background: "transparent", color: "#f0e8ff", fontWeight: 600, fontSize: "0.88rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
         >
-          🔁 Retry Same Role
+          <RotateCcw size={16} /> Retry Same Role
         </button>
       </div>
     </section>

@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { useAppStore } from "@/src/state/useAppStore";
 import { useRouter } from "next/navigation";
 import ResumeGate from "@/src/components/ResumeGate";
+import { Mic, Target, Briefcase, Monitor, Code, Rocket, BarChart, Check, AlertTriangle, Lightbulb, Flag, Clock } from "lucide-react";
 
 type QType = "theory" | "practical" | "problem" | "behavioral" | "aptitude";
 interface Question { text: string; type: QType; hint: string; marks: number; }
@@ -100,6 +101,8 @@ export default function InterviewPage() {
     const { profile, addXP } = useAppStore();
     const [phase, setPhase] = useState<Phase>("setup");
     const [round, setRound] = useState("hr");
+    const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
+    const [timerDuration, setTimerDuration] = useState(120);
     const [questions, setQuestions] = useState<Question[]>([]);
     const [qIdx, setQIdx] = useState(0);
     const [answers, setAnswers] = useState<string[]>([]);
@@ -108,6 +111,14 @@ export default function InterviewPage() {
     const [timer, setTimer] = useState(120);
     const [pasteCount, setPasteCount] = useState(0);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const [history, setHistory] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const h = localStorage.getItem("ciq-interview-history");
+            if (h) setHistory(JSON.parse(h));
+        }
+    }, []);
 
     const startInterview = () => {
         const skills = profile?.skills || ["React", "TypeScript", "Node.js"];
@@ -115,7 +126,7 @@ export default function InterviewPage() {
         const exp = profile?.experience || 0;
         const qs = buildQuestions(skills, domain, exp);
         setQuestions(qs);
-        setQIdx(0); setAnswers([]); setFeedbacks([]); setCurrent(""); setTimer(120); setPasteCount(0);
+        setQIdx(0); setAnswers([]); setFeedbacks([]); setCurrent(""); setTimer(timerDuration); setPasteCount(0);
         setPhase("interview");
         startTimer(qs.length > 0);
     };
@@ -124,7 +135,7 @@ export default function InterviewPage() {
         if (timerRef.current) clearInterval(timerRef.current);
         if (!active) return;
         timerRef.current = setInterval(() => setTimer(t => {
-            if (t <= 1) { handleSubmit(true); return 120; }
+            if (t <= 1) { handleSubmit(true); return timerDuration; }
             return t - 1;
         }), 1000);
     };
@@ -144,31 +155,36 @@ export default function InterviewPage() {
             const totalMarks = questions.reduce((a, b) => a + b.marks, 0);
             const pct = Math.round((totalScored / totalMarks) * 100);
             addXP(Math.round(pct * 1.5), `${round.toUpperCase()} Interview — ${pct}%`);
+            // Save to interview history
+            const record = { round, difficulty, pct, totalScored, totalMarks, date: new Date().toISOString(), domain: profile?.domain || "" };
+            const updatedHistory = [record, ...history].slice(0, 20);
+            setHistory(updatedHistory);
+            if (typeof window !== "undefined") localStorage.setItem("ciq-interview-history", JSON.stringify(updatedHistory));
             setPhase("result");
         } else {
             setQIdx(i => i + 1);
-            setTimer(120);
+            setTimer(timerDuration);
             startTimer(true);
         }
     };
 
     // SETUP phase
     if (phase === "setup") return (
-        <ResumeGate pageName="Interview Simulator" pageIcon="🎤">
+        <ResumeGate pageName="Interview Simulator" pageIcon={<Mic size={64} />}>
         <div className="page-enter" style={{ maxWidth: 800, margin: "0 auto" }}>
-            <h1 style={{ marginBottom: 4 }}>🎤 Interview Simulator</h1>
+            <h1 style={{ marginBottom: 4, display: "flex", alignItems: "center", gap: 10 }}><Mic size={26} /> Interview Simulator</h1>
             <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: 16 }}>AI-powered VR mock interviews with questions tailored to your resume — including aptitude & reasoning rounds</p>
 
             {/* Resume role pre-fill banner */}
             {profile?.domain && (
                 <div style={{ marginBottom: 20, padding: "14px 20px", borderRadius: 14, background: "linear-gradient(135deg,rgba(167,139,250,0.12),rgba(96,165,250,0.08))", border: "1px solid rgba(167,139,250,0.3)", display: "flex", alignItems: "center", gap: 14 }}>
-                    <div style={{ fontSize: "2rem" }}>🎯</div>
+                    <div style={{ color: "var(--accent)" }}><Target size={32} /></div>
                     <div>
                         <div style={{ fontSize: "0.7rem", color: "rgba(167,139,250,0.7)", fontWeight: 700, letterSpacing: "0.1em", marginBottom: 4 }}>RESUME-DETECTED ROLE</div>
                         <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f1f5f9" }}>{profile.domain}</div>
                         <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: 2 }}>{profile.experience || 0} yr experience · {profile.skills?.slice(0, 3).join(", ")}{profile.skills?.length > 3 ? ` +${profile.skills.length - 3} more` : ""}</div>
                     </div>
-                    <div style={{ marginLeft: "auto", fontSize: "0.68rem", color: "rgba(52,211,153,0.8)", fontWeight: 600, background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.25)", borderRadius: 20, padding: "4px 12px" }}>✓ Resume Loaded</div>
+                    <div style={{ marginLeft: "auto", fontSize: "0.68rem", color: "rgba(52,211,153,0.8)", fontWeight: 600, background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.25)", borderRadius: 20, padding: "4px 12px", display: "flex", alignItems: "center" }}><Check size={12} className="mr-1" /> Resume Loaded</div>
                 </div>
             )}
 
@@ -186,35 +202,85 @@ export default function InterviewPage() {
             </div>
 
             <div className="card" style={{ marginBottom: 20 }}>
-                <h3>🎯 Your Resume Profile — Questions Personalized For You</h3>
+                <h3 style={{ display: "flex", alignItems: "center", gap: 8 }}><Target size={18} /> Your Resume Profile — Questions Personalized For You</h3>
                 <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 10 }}>{profile!.skills.slice(0, 8).map(s => <span key={s} className="skill-tag">{s}</span>)}</div>
                 <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", margin: 0 }}>Domain: <strong style={{ color: "var(--accent)" }}>{profile!.domain}</strong> · {profile!.experience} year(s) experience · Aptitude questions adapted to your field</p>
             </div>
 
-            <div className="grid-3" style={{ marginBottom: 24 }}>
-                {[["hr", "👔", "HR Round", "Behavioral & personality + domain questions", "#a78bfa"], ["tech", "💻", "Technical Round", "Deep technical + system design", "#60a5fa"], ["code", "🧑‍💻", "Coding Round", "DSA, algorithms + problem solving", "#34d399"]].map(([id, icon, title, desc, color]) => (
+            {/* Round Selection */}
+            <div className="grid-3" style={{ marginBottom: 20 }}>
+                {[["hr", <Briefcase key="hr" size={32} />, "HR Round", "Behavioral & personality + domain questions", "#a78bfa"], ["tech", <Monitor key="tech" size={32} />, "Technical Round", "Deep technical + system design", "#60a5fa"], ["code", <Code key="code" size={32} />, "Coding Round", "DSA, algorithms + problem solving", "#34d399"]].map(([id, icon, title, desc, color]) => (
                     <div key={id as string} className="card" style={{ cursor: "pointer", borderColor: round === id ? (color as string) : undefined, background: round === id ? `${color}11` : undefined, transition: "all 0.2s" }} onClick={() => setRound(id as string)}>
-                        <div style={{ fontSize: "1.6rem", marginBottom: 10 }}>{icon}</div>
+                        <div style={{ marginBottom: 10, color: color as string }}>{icon}</div>
                         <div style={{ fontWeight: 600, marginBottom: 4 }}>{title}</div>
                         <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{desc}</div>
-                        {round === id && <div style={{ marginTop: 10, fontSize: "0.7rem", color: color as string }}>✓ Selected</div>}
+                        {round === id && <div style={{ marginTop: 10, fontSize: "0.7rem", color: color as string, display: "flex", alignItems: "center", gap: 4 }}><Check size={12} /> Selected</div>}
                     </div>
                 ))}
             </div>
 
+            {/* Difficulty & Timer Selection */}
+            <div className="grid-2" style={{ marginBottom: 20 }}>
+                <div className="card">
+                    <h3 style={{ marginBottom: 12, fontSize: "0.85rem" }}>Difficulty Level</h3>
+                    <div style={{ display: "flex", gap: 8 }}>
+                        {(["easy", "medium", "hard"] as const).map(d => (
+                            <button key={d} onClick={() => setDifficulty(d)} style={{
+                                flex: 1, padding: "10px 14px", borderRadius: 10, border: `1px solid ${difficulty === d ? (d === "easy" ? "#34d399" : d === "medium" ? "#fbbf24" : "#f87171") : "rgba(255,255,255,0.1)"}`,
+                                background: difficulty === d ? (d === "easy" ? "rgba(52,211,153,0.1)" : d === "medium" ? "rgba(251,191,36,0.1)" : "rgba(248,113,113,0.1)") : "transparent",
+                                color: difficulty === d ? (d === "easy" ? "#34d399" : d === "medium" ? "#fbbf24" : "#f87171") : "var(--text-muted)",
+                                fontSize: "0.8rem", fontWeight: 700, cursor: "pointer", textTransform: "capitalize", transition: "all 0.2s",
+                            }}>{d}</button>
+                        ))}
+                    </div>
+                </div>
+                <div className="card">
+                    <h3 style={{ marginBottom: 12, fontSize: "0.85rem" }}>Timer per Question</h3>
+                    <div style={{ display: "flex", gap: 8 }}>
+                        {[60, 120, 180].map(t => (
+                            <button key={t} onClick={() => setTimerDuration(t)} style={{
+                                flex: 1, padding: "10px 14px", borderRadius: 10, border: `1px solid ${timerDuration === t ? "var(--accent)" : "rgba(255,255,255,0.1)"}`,
+                                background: timerDuration === t ? "rgba(167,139,250,0.12)" : "transparent",
+                                color: timerDuration === t ? "var(--accent)" : "var(--text-muted)",
+                                fontSize: "0.8rem", fontWeight: 700, cursor: "pointer", transition: "all 0.2s",
+                            }}>{t}s</button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Anti-Cheat */}
             <div className="card" style={{ marginBottom: 20, background: "rgba(248,113,113,0.05)", borderColor: "rgba(248,113,113,0.2)" }}>
-                <div style={{ fontWeight: 600, color: "var(--red)", marginBottom: 8, fontSize: "0.85rem" }}>⚠ Anti-Cheat Notice</div>
+                <div style={{ fontWeight: 600, color: "var(--red)", marginBottom: 8, fontSize: "0.85rem", display: "flex", alignItems: "center", gap: 4 }}><AlertTriangle size={14} /> Anti-Cheat Notice</div>
                 <ul style={{ fontSize: "0.78rem", color: "var(--text-muted)", lineHeight: 2, paddingLeft: 16 }}>
                     <li>Paste is disabled in all answer fields</li>
                     <li>Copy is blocked within the interview session</li>
                     <li>Typing speed anomalies are monitored</li>
-                    <li>Instant large text insertions are flagged</li>
-                    <li>Each answer auto-submits when the 2-minute timer expires</li>
+                    <li>Each answer auto-submits when the {timerDuration}s timer expires</li>
                 </ul>
             </div>
 
-            <button className="btn-primary" onClick={startInterview} style={{ padding: "13px 32px", fontSize: "0.95rem", background: "linear-gradient(135deg,#7c3aed,#a78bfa)", boxShadow: "0 8px 24px rgba(124,58,237,0.35)" }}>
-                🚀 Start {round.toUpperCase()} Interview →
+            {/* Past Interview History */}
+            {history.length > 0 && (
+                <div className="card" style={{ marginBottom: 20 }}>
+                    <h3 style={{ marginBottom: 12, fontSize: "0.85rem" }}>Past Interview Performance</h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {history.slice(0, 5).map((h, i) => (
+                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 14px", background: "rgba(255,255,255,0.02)", borderRadius: 8 }}>
+                                <div style={{ width: 32, height: 32, borderRadius: 8, background: h.pct >= 75 ? "rgba(52,211,153,0.15)" : h.pct >= 50 ? "rgba(251,191,36,0.15)" : "rgba(248,113,113,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "0.8rem", color: h.pct >= 75 ? "#34d399" : h.pct >= 50 ? "#fbbf24" : "#f87171" }}>{h.pct}%</div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text)" }}>{h.round.toUpperCase()} Round · {h.difficulty}</div>
+                                    <div style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>{new Date(h.date).toLocaleDateString()} · {h.domain}</div>
+                                </div>
+                                <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>{h.totalScored}/{h.totalMarks}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            <button className="btn-primary" onClick={startInterview} style={{ padding: "13px 32px", fontSize: "0.95rem", background: "linear-gradient(135deg,#7c3aed,#a78bfa)", boxShadow: "0 8px 24px rgba(124,58,237,0.35)", display: "flex", alignItems: "center", gap: 8 }}>
+                <Rocket size={18} /> Start {round.toUpperCase()} Interview ({difficulty}) →
             </button>
         </div>
         </ResumeGate>
@@ -223,8 +289,8 @@ export default function InterviewPage() {
     // INTERVIEW phase
     if (phase === "interview" && questions.length > 0) {
         const q = questions[qIdx];
-        const timerPct = (timer / 120) * 100;
-        const timerColor = timer > 60 ? "var(--green)" : timer > 30 ? "var(--yellow)" : "var(--red)";
+        const timerPct = (timer / timerDuration) * 100;
+        const timerColor = timer > timerDuration * 0.5 ? "var(--green)" : timer > timerDuration * 0.25 ? "var(--yellow)" : "var(--red)";
         const totalMarks = questions.reduce((a, b) => a + b.marks, 0);
         return (
             <div className="vr-container page-enter animate-fade" style={{ maxWidth: 860, margin: "0 auto", padding: "32px 36px" }}>
@@ -235,7 +301,7 @@ export default function InterviewPage() {
                 {/* Header row */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 28, position: "relative" }}>
                     <div>
-                        <div style={{ fontSize: "0.6rem", color: "var(--accent)", fontWeight: 700, letterSpacing: "0.12em", marginBottom: 4 }}>🎤 {round.toUpperCase()} VIRTUAL INTERVIEW</div>
+                        <div style={{ fontSize: "0.6rem", color: "var(--accent)", fontWeight: 700, letterSpacing: "0.12em", marginBottom: 4, display: "flex", alignItems: "center", gap: 4 }}><Mic size={12} /> {round.toUpperCase()} VIRTUAL INTERVIEW</div>
                         <h1 style={{ fontSize: "1.1rem", color: "#f8fafc" }}>Question {qIdx + 1} of {questions.length}</h1>
                         <div style={{ fontSize: "0.72rem", color: "#6b7280", marginTop: 2 }}>Total marks: {totalMarks} · Paste blocked</div>
                     </div>
@@ -250,7 +316,7 @@ export default function InterviewPage() {
                         </svg>
                         {timer <= 15 && <div style={{ fontSize: "0.6rem", color: "var(--red)", fontWeight: 700 }}>AUTO-SUBMIT</div>}
                     </div>
-                    {pasteCount > 0 && <div style={{ position: "absolute", top: -8, right: 90, background: "rgba(248,113,113,0.15)", border: "1px solid rgba(248,113,113,0.4)", borderRadius: 8, padding: "3px 10px", fontSize: "0.68rem", color: "var(--red)" }}>⚠ {pasteCount} paste attempt(s)</div>}
+                    {pasteCount > 0 && <div style={{ position: "absolute", top: -8, right: 90, background: "rgba(248,113,113,0.15)", border: "1px solid rgba(248,113,113,0.4)", borderRadius: 8, padding: "3px 10px", fontSize: "0.68rem", color: "var(--red)", display: "flex", alignItems: "center", gap: 4 }}><AlertTriangle size={12} /> {pasteCount} paste attempt(s)</div>}
                 </div>
 
                 {/* Progress */}
@@ -269,28 +335,56 @@ export default function InterviewPage() {
                 <div style={{ background: "rgba(167,139,250,0.07)", border: `1px solid ${typeColor[q.type]}30`, borderRadius: 14, padding: "22px 26px", marginBottom: 22 }}>
                     <div style={{ fontSize: "0.62rem", color: typeColor[q.type], fontWeight: 700, letterSpacing: "0.1em", marginBottom: 10 }}>QUESTION {qIdx + 1}</div>
                     <p style={{ fontSize: "1rem", color: "#f1f5f9", lineHeight: 1.7, margin: 0 }}>{q.text}</p>
-                    <div style={{ marginTop: 14, padding: "8px 12px", background: "rgba(255,255,255,0.04)", borderRadius: 8, fontSize: "0.75rem", color: "#6b7280", fontStyle: "italic" }}>💡 Hint: {q.hint}</div>
+                    <div style={{ marginTop: 14, padding: "8px 12px", background: "rgba(255,255,255,0.04)", borderRadius: 8, fontSize: "0.75rem", color: "#6b7280", fontStyle: "italic", display: "flex", alignItems: "center", gap: 6 }}><Lightbulb size={14} /> Hint: {q.hint}</div>
                 </div>
 
                 {/* Answer */}
-                <textarea
-                    value={current}
-                    onChange={e => setCurrent(e.target.value)}
-                    onPaste={e => { e.preventDefault(); setPasteCount(p => p + 1); }}
-                    onCopy={e => e.preventDefault()}
-                    onCut={e => e.preventDefault()}
-                    onContextMenu={e => e.preventDefault()}
-                    placeholder="Write your answer in detail. Explain concepts, give examples, mention trade-offs. Paste is disabled."
-                    style={{ width: "100%", minHeight: 160, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(167,139,250,0.25)", borderRadius: 12, padding: "16px 18px", color: "#e2e8f0", fontSize: "0.88rem", resize: "vertical", outline: "none", fontFamily: "Inter, sans-serif", lineHeight: 1.7 }}
-                />
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
-                    <div style={{ fontSize: "0.72rem", color: "#4b5563" }}>
-                        {current.split(/\s+/).filter(Boolean).length} words · {q.marks} marks available · answer monitored
-                    </div>
-                    <button className="btn-primary" onClick={() => handleSubmit()} style={{ minWidth: 160 }}>
-                        {qIdx + 1 === questions.length ? "Finish Interview →" : "Submit & Next →"}
-                    </button>
-                </div>
+                {(() => {
+                    const wordCount = current.trim() ? current.trim().split(/\s+/).length : 0;
+                    const quality = wordCount >= 80 ? "var(--green)" : wordCount >= 40 ? "var(--yellow)" : wordCount >= 10 ? "#f97316" : "rgba(255,255,255,0.15)";
+                    const qualityLabel = wordCount >= 80 ? "Excellent depth" : wordCount >= 40 ? "Good — add examples" : wordCount >= 10 ? "Too brief" : "Start typing…";
+                    return (
+                        <>
+                            <textarea
+                                value={current}
+                                onChange={e => setCurrent(e.target.value)}
+                                onPaste={e => { e.preventDefault(); setPasteCount(p => p + 1); }}
+                                onCopy={e => e.preventDefault()}
+                                onCut={e => e.preventDefault()}
+                                onContextMenu={e => e.preventDefault()}
+                                autoFocus
+                                placeholder="Write your answer in detail. Explain concepts, give examples, mention trade-offs. Paste is disabled for integrity."
+                                style={{
+                                    width: "100%", minHeight: 180, boxSizing: "border-box",
+                                    background: "rgba(255,255,255,0.05)",
+                                    border: `1px solid ${wordCount >= 40 ? "rgba(167,139,250,0.45)" : "rgba(167,139,250,0.2)"}`,
+                                    borderRadius: 12, padding: "16px 18px",
+                                    color: "#e2e8f0", fontSize: "0.9rem",
+                                    resize: "vertical", outline: "none",
+                                    fontFamily: "Inter, sans-serif", lineHeight: 1.8,
+                                    pointerEvents: "all", userSelect: "text",
+                                    transition: "border-color 0.3s",
+                                }}
+                            />
+                            {/* Live quality bar */}
+                            <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 10 }}>
+                                <div style={{ flex: 1, height: 3, borderRadius: 99, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                                    <div style={{ height: "100%", width: `${Math.min(100, (wordCount / 80) * 100)}%`, background: quality, borderRadius: 99, transition: "width 0.3s, background 0.3s" }} />
+                                </div>
+                                <span style={{ fontSize: "0.65rem", color: quality, fontWeight: 600, whiteSpace: "nowrap" }}>{wordCount} words · {qualityLabel}</span>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14 }}>
+                                <div style={{ fontSize: "0.7rem", color: "#4b5563" }}>
+                                    {q.marks} marks · anti-cheat active
+                                    {pasteCount > 0 && <span style={{ color: "var(--red)", marginLeft: 8, display: "inline-flex", alignItems: "center", gap: 4 }}><AlertTriangle size={12} /> {pasteCount} paste attempt(s)</span>}
+                                </div>
+                                <button className="btn-primary" onClick={() => handleSubmit()} style={{ minWidth: 170, padding: "10px 22px" }}>
+                                    {qIdx + 1 === questions.length ? <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Flag size={16} /> Finish Interview</span> : "Submit & Next →"}
+                                </button>
+                            </div>
+                        </>
+                    );
+                })()}
             </div>
         );
     }
@@ -305,13 +399,13 @@ export default function InterviewPage() {
         return (
             <div className="page-enter" style={{ maxWidth: 800, margin: "0 auto" }}>
                 <div className="card animate-glow card-glow" style={{ textAlign: "center", padding: 40, marginBottom: 24, background: "linear-gradient(135deg,rgba(124,58,237,0.12),rgba(167,139,250,0.06))" }}>
-                    <div style={{ fontSize: "2.5rem", marginBottom: 12 }}>📊</div>
+                    <div style={{ display: "flex", justifyContent: "center", marginBottom: 12, color: statusColor }}><BarChart size={48} /></div>
                     <h1 style={{ marginBottom: 4 }}>Interview Analysis Report</h1>
                     <div style={{ fontSize: "3.5rem", fontWeight: 800, color: statusColor, margin: "16px 0 8px" }}>{pct}%</div>
                     <div style={{ fontSize: "1.05rem", fontWeight: 600, color: statusColor, marginBottom: 12 }}>Final Status: {status}</div>
                     <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
                         <span className="badge-purple">{totalScored}/{totalMarks} marks</span>
-                        {pasteCount > 0 && <span className="badge-red">⚠ {pasteCount} paste attempt(s)</span>}
+                        {pasteCount > 0 && <span className="badge-red" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><AlertTriangle size={12} /> {pasteCount} paste attempt(s)</span>}
                         <span className="badge-blue">{questions.length} questions</span>
                     </div>
                 </div>
@@ -346,7 +440,7 @@ export default function InterviewPage() {
                                     </div>
                                 )}
                                 {answers[i] === "(Time Expired)" && (
-                                    <div style={{ margin: "8px 0", padding: "6px 12px", background: "rgba(248,113,113,0.06)", borderRadius: 8, fontSize: "0.72rem", color: "#f87171" }}>⏱ Time expired — no answer submitted</div>
+                                    <div style={{ margin: "8px 0", padding: "6px 12px", background: "rgba(248,113,113,0.06)", borderRadius: 8, fontSize: "0.72rem", color: "#f87171", display: "flex", alignItems: "center", gap: 4 }}><Clock size={12} /> Time expired — no answer submitted</div>
                                 )}
                                 <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: 4 }}>{feedbacks[i]?.feedback}</div>
                             </div>

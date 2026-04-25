@@ -4,8 +4,9 @@ import { FormEvent, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useAuthStore } from "../../state/useAuthStore";
+import { X, Sparkles, Zap, Send } from "lucide-react";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === "production" ? "/api" : "http://localhost:8000");
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -61,7 +62,7 @@ export default function FloatingChat() {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
       >
-        {open ? "✕" : "🔮"}
+        {open ? <X size={24} /> : <Sparkles size={24} />}
       </motion.button>
 
       {/* Chat Window */}
@@ -89,8 +90,8 @@ export default function FloatingChat() {
               width: 34, height: 34, borderRadius: "50%",
               background: "linear-gradient(135deg,#663399,#9b59b6)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: "1rem", boxShadow: "0 4px 12px rgba(102,51,153,0.5)",
-            }}>⚡</div>
+              fontSize: "1rem", boxShadow: "0 4px 12px rgba(102,51,153,0.5)", color: "white"
+            }}><Zap size={16} /></div>
             <div>
               <div style={{ fontWeight: 800, color: "#f0e8ff", fontSize: "0.92rem", letterSpacing: "0.02em" }}>
                 HelixAI
@@ -112,9 +113,8 @@ export default function FloatingChat() {
             height: 200, padding: "10px 12px", overflowY: "auto",
             display: "flex", flexDirection: "column", gap: 8,
           }}>
-            {messages.length === 0 && (
-              <div style={{ color: "rgba(163,119,157,0.5)", fontSize: "0.78rem", textAlign: "center", marginTop: 60 }}>
-                <div style={{ fontSize: "1.4rem", marginBottom: 6 }}>🔮</div>
+              <div style={{ color: "rgba(163,119,157,0.5)", fontSize: "0.78rem", textAlign: "center", marginTop: 60, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <div style={{ marginBottom: 6 }}><Sparkles size={36} color="var(--accent)" /></div>
                 Hi! I'm HelixAI — ask me anything about your career, resume, or interview prep!
               </div>
             )}
@@ -129,7 +129,7 @@ export default function FloatingChat() {
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: "0.55rem", color: "white", fontWeight: 700,
                 }}>
-                  {m.role === "user" ? "U" : "⚡"}
+                  {m.role === "user" ? "U" : <Zap size={12} />}
                 </div>
                 <div style={{
                   maxWidth: "78%", padding: "7px 10px", borderRadius: 10, fontSize: "0.75rem",
@@ -171,8 +171,8 @@ export default function FloatingChat() {
               width: 36, height: 36, borderRadius: 10, border: "none",
               background: "linear-gradient(135deg,#663399,#9b59b6)", color: "white",
               cursor: input.trim() ? "pointer" : "not-allowed", opacity: input.trim() ? 1 : 0.5,
-              fontSize: "0.9rem", display: "flex", alignItems: "center", justifyContent: "center",
-            }}>→</button>
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}><Send size={16} /></button>
           </form>
 
           <style>{`

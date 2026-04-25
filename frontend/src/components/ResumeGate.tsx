@@ -2,40 +2,56 @@
 import { useAppStore } from "@/src/state/useAppStore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
+import { Lock, Rocket, FileText, Sparkles, BarChart, Mic, Map, Puzzle, BookOpen, Network } from "lucide-react";
 
 interface ResumeGateProps {
     children: ReactNode;
     pageName?: string;
-    pageIcon?: string;
+    pageIcon?: ReactNode;
 }
 
-export default function ResumeGate({ children, pageName = "this page", pageIcon = "🔒" }: ResumeGateProps) {
+export default function ResumeGate({ children, pageName = "this page", pageIcon = <Lock size={64} /> }: ResumeGateProps) {
     const { profile, role } = useAppStore();
     const router = useRouter();
+    const [mounted, setMounted] = useState(false);
 
-    // Not logged in → redirect to login
+    // Wait for client-side hydration before checking auth
+    useEffect(() => { setMounted(true); }, []);
+
+    // ── Guest: redirect to login, saving return path ──────────────
+    useEffect(() => {
+        if (!mounted) return;
+        if (role === "guest") {
+            if (typeof window !== "undefined") {
+                const currentPath = window.location.pathname.replace(/^\//, "") || "dashboard";
+                localStorage.setItem("ciq-redirect-after-login", currentPath);
+            }
+            router.replace("/login");
+        }
+    }, [role, router, mounted]);
+
+    // Don't render anything until mounted (prevents flash)
+    if (!mounted) {
+        return (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
+                <div style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>Loading…</div>
+            </div>
+        );
+    }
+
     if (role === "guest") {
         return (
-            <div className="page-enter" style={{ maxWidth: 560, margin: "80px auto", textAlign: "center" }}>
-                <div style={{ fontSize: "3rem", marginBottom: 20 }}>🔐</div>
-                <h1 style={{ marginBottom: 8 }}>Sign In Required</h1>
-                <p style={{ color: "var(--text-muted)", fontSize: "0.88rem", marginBottom: 28, lineHeight: 1.7 }}>
-                    You need to be signed in to access {pageName}. Create a free account to unlock all AI features.
-                </p>
-                <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-                    <Link href="/login" className="btn-primary" style={{ textDecoration: "none", padding: "12px 28px" }}>
-                        🚀 Sign In / Register
-                    </Link>
-                    <Link href="/" className="btn-ghost" style={{ textDecoration: "none", padding: "12px 28px" }}>
-                        ← Back to Home
-                    </Link>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
+                <div style={{ color: "var(--text-muted)", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+                    <Lock size={32} style={{ color: "var(--accent)" }} />
+                    <span style={{ fontSize: "0.88rem" }}>Redirecting to sign in…</span>
                 </div>
             </div>
         );
     }
 
-    // Logged in but no resume uploaded
+    // ── Logged in but no resume ────────────────────────────────────
     if (!profile || !profile.skills || profile.skills.length === 0) {
         return (
             <div className="page-enter" style={{ maxWidth: 640, margin: "0 auto" }}>
@@ -50,7 +66,7 @@ export default function ResumeGate({ children, pageName = "this page", pageIcon 
                         Resume Required to Unlock {pageName}
                     </div>
 
-                    <div style={{ fontSize: "4rem", marginBottom: 16 }} className="animate-float">{pageIcon}</div>
+                    <div style={{ display: "flex", justifyContent: "center", marginBottom: 16, color: "var(--text)" }} className="animate-float">{pageIcon}</div>
 
                     <h1 style={{ fontSize: "1.8rem", marginBottom: 12, background: "linear-gradient(135deg,#f1f5f9,#a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                         Unlock {pageName}
@@ -64,9 +80,10 @@ export default function ResumeGate({ children, pageName = "this page", pageIcon 
                         <Link href="/resume" className="btn-primary" style={{
                             textDecoration: "none", padding: "14px 36px", fontSize: "1rem",
                             background: "linear-gradient(135deg,#7c3aed,#a78bfa)",
-                            boxShadow: "0 8px 24px rgba(124,58,237,0.35)"
+                            boxShadow: "0 8px 24px rgba(124,58,237,0.35)",
+                            display: "flex", alignItems: "center", gap: 8
                         }}>
-                            📄 Upload Resume — Unlock Now
+                            <FileText size={18} /> Upload Resume — Unlock Now
                         </Link>
                         <Link href="/dashboard" className="btn-ghost" style={{ textDecoration: "none", padding: "14px 28px" }}>
                             ← Dashboard
@@ -80,15 +97,15 @@ export default function ResumeGate({ children, pageName = "this page", pageIcon 
                     background: "linear-gradient(135deg,rgba(124,58,237,0.08),rgba(167,139,250,0.04))",
                     borderColor: "rgba(124,58,237,0.25)"
                 }}>
-                    <h2 style={{ marginBottom: 16 }}>✨ What You Unlock</h2>
+                    <h2 style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}><Sparkles size={20} /> What You Unlock</h2>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
                         {[
-                            { icon: "📊", title: "Career Dashboard", desc: "Skill radar, health score & analytics" },
-                            { icon: "🎤", title: "Interview Sim", desc: "Resume-based questions + aptitude" },
-                            { icon: "🗺️", title: "Career Path AI", desc: "Personalized 6-month roadmap" },
-                            { icon: "🧩", title: "Skill Gap Analysis", desc: "Compare your skills vs market" },
-                            { icon: "📚", title: "Learning Path", desc: "Recommended courses for YOUR gaps" },
-                            { icon: "🧬", title: "Skill DNA Graph", desc: "Visual skill connection map" },
+                            { icon: <BarChart size={24} />, title: "Career Dashboard", desc: "Skill radar, health score & analytics" },
+                            { icon: <Mic size={24} />, title: "Interview Sim", desc: "Resume-based questions + aptitude" },
+                            { icon: <Map size={24} />, title: "Career Path AI", desc: "Personalized 6-month roadmap" },
+                            { icon: <Puzzle size={24} />, title: "Skill Gap Analysis", desc: "Compare your skills vs market" },
+                            { icon: <BookOpen size={24} />, title: "Learning Path", desc: "Recommended courses for YOUR gaps" },
+                            { icon: <Network size={24} />, title: "Skill DNA Graph", desc: "Visual skill connection map" },
                         ].map(item => (
                             <div key={item.title} style={{
                                 display: "flex", gap: 10, alignItems: "flex-start",
@@ -96,7 +113,7 @@ export default function ResumeGate({ children, pageName = "this page", pageIcon 
                                 background: "rgba(255,255,255,0.03)",
                                 border: "1px solid rgba(167,139,250,0.1)"
                             }}>
-                                <div style={{ fontSize: "1.4rem", flexShrink: 0 }}>{item.icon}</div>
+                                <div style={{ color: "var(--accent)", flexShrink: 0 }}>{item.icon}</div>
                                 <div>
                                     <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text)", marginBottom: 2 }}>{item.title}</div>
                                     <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>{item.desc}</div>
