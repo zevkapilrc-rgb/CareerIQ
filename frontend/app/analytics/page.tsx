@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useAppStore } from "@/src/state/useAppStore";
 import { 
     LineChart, Line, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, 
-    BarChart, Bar, RadarChart, Radar, PolarGrid, PolarAngleAxis, ComposedChart, Scatter, ScatterChart, ZAxis, Legend 
+    BarChart, Bar, RadarChart, Radar, PolarGrid, PolarAngleAxis, ComposedChart, Scatter, ScatterChart, ZAxis, Legend, Cell 
 } from "recharts";
 import { TrendingUp, BarChart2, Activity, Target, Zap, Briefcase, Award, Globe, Database } from "lucide-react";
 import ResumeGate from "@/src/components/ResumeGate";
@@ -229,13 +229,13 @@ export default function AnalyticsPage() {
                             <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ background: "rgba(15,15,20,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12 }} />
                             <Scatter name="Skills" data={skillVelocityData} fill="#8b5cf6">
                                 {skillVelocityData.map((entry, index) => (
-                                    <cell key={`cell-${index}`} fill={entry.mastery > 75 ? "#34d399" : entry.mastery > 50 ? "#a78bfa" : "#f87171"} />
+                                    <Cell key={`cell-${index}`} fill={entry.mastery > 75 ? "#34d399" : entry.mastery > 50 ? "#a78bfa" : "#f87171"} />
                                 ))}
                             </Scatter>
                         </ScatterChart>
                     </ResponsiveContainer>
                     <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 10, fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                        <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#34d399" }}/> Expert (>75%)</span>
+                        <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#34d399" }}/> Expert (&gt;75%)</span>
                         <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#a78bfa" }}/> Intermediate (50-75%)</span>
                         <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#f87171" }}/> Beginner (&lt;50%)</span>
                     </div>
