@@ -11,6 +11,7 @@
   "dependencies": {
     "@tanstack/react-query": "5.51.11",
     "bcryptjs": "^3.0.3",
+    "firebase": "^12.12.1",
     "framer-motion": "^11.0.8",
     "lucide-react": "^1.11.0",
     "mongoose": "^9.5.0",
