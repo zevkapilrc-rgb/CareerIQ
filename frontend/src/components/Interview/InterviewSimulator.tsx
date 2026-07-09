@@ -1,12 +1,16 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useAppStore } from "../../state/useAppStore";
 import { Mic, Check, ClipboardList, Loader2, Rocket, Clock, ArrowRight, PartyPopper, RefreshCw, RotateCcw } from "lucide-react";
+import GlassCard from "../ui/GlassCard";
+import KPICard from "../ui/KPICard";
+import ProgressRing from "../ui/ProgressRing";
+import Badge from "../ui/Badge";
+import PremiumButton from "../ui/PremiumButton";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === "production" ? "/api" : "http://localhost:8000");
 
-// Randomised question bank – questions chosen based on role
 const QUESTION_BANK: Record<string, string[]> = {
   default: [
     "Tell me about yourself and your background.",
@@ -83,12 +87,10 @@ const QUESTION_BANK: Record<string, string[]> = {
 };
 
 function getQuestionsForRole(role: string): string[] {
-  // Find best matching key
   const key = Object.keys(QUESTION_BANK).find(k =>
     k !== "default" && role.toLowerCase().includes(k.toLowerCase())
   ) || "default";
   const roleQs = QUESTION_BANK[key] || QUESTION_BANK["default"];
-  // Combine with some default questions, shuffle, take 8
   const combined = [...roleQs, ...QUESTION_BANK["default"]];
   const unique = Array.from(new Set(combined));
   return unique.sort(() => Math.random() - 0.5).slice(0, 8);
@@ -108,12 +110,10 @@ export default function InterviewSimulator() {
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(90);
 
-  // Pre-fill role from resume profile
   useEffect(() => {
     if (profile?.domain) setRole(profile.domain);
   }, [profile]);
 
-  // Countdown timer per question
   useEffect(() => {
     if (phase !== "interview") return;
     if (timer <= 0) return;
@@ -124,7 +124,6 @@ export default function InterviewSimulator() {
   const startInterview = async () => {
     setLoading(true);
     try {
-      // Try AI-generated questions first
       const res = await fetch(`${API_BASE}/interview/simulate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -136,7 +135,6 @@ export default function InterviewSimulator() {
         setQuestions(qs.sort(() => Math.random() - 0.5).slice(0, 8));
       } else throw new Error("fallback");
     } catch {
-      // Fallback to local question bank
       setQuestions(getQuestionsForRole(role));
     }
     setAnswers([]);
@@ -159,39 +157,38 @@ export default function InterviewSimulator() {
     }
   };
 
-  const timerColor = timer > 30 ? "var(--green)" : timer > 10 ? "var(--yellow)" : "#f87171";
+  const timerColor = timer > 30 ? "text-emerald-400" : timer > 10 ? "text-amber-400" : "text-red-400";
   const progress = questions.length ? (currentIdx / questions.length) * 100 : 0;
 
-  // ── SETUP SCREEN ──
+  // â”€â”€ SETUP SCREEN â”€â”€
   if (phase === "setup") return (
-    <section style={{ borderRadius: 20, border: "1px solid rgba(163,119,157,0.2)", background: "rgba(18,10,34,0.6)", backdropFilter: "blur(20px)", padding: 28, maxWidth: 620, margin: "0 auto" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 12, background: "linear-gradient(135deg,#663399,#9b59b6)", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}><Mic size={20} /></div>
+    <GlassCard className="p-7 max-w-[620px] mx-auto animate-fade">
+      <div className="flex items-center gap-3.5 mb-6">
+        <div className="w-10 h-10 rounded-xl bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 flex items-center justify-center text-[var(--color-accent)]"><Mic size={20} /></div>
         <div>
-          <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800 }}>AI Interview Simulator</h2>
-          <p style={{ margin: 0, fontSize: "0.72rem", color: "rgba(163,119,157,0.7)" }}>Powered by HelixAI · Questions based on your resume</p>
+          <h2 className="text-base font-bold text-white font-display">AI Interview Simulator</h2>
+          <p className="text-[10px] text-zinc-550 font-semibold uppercase tracking-wider">Powered by HelixAI Â· Questions base on profile</p>
         </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+      <div className="flex flex-col gap-4 mb-6">
         <div>
-          <label style={{ fontSize: "0.72rem", color: "rgba(163,119,157,0.75)", marginBottom: 5, display: "block", fontWeight: 600, letterSpacing: "0.06em" }}>TARGET ROLE</label>
+          <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 block font-display">Target Role</label>
           <input
-            className="input-field"
+            className="w-full h-10 bg-black/40 border border-white/[0.06] rounded-xl px-3.5 text-xs text-white placeholder-zinc-700 focus:border-[var(--color-primary)]/60 outline-none transition-colors"
             value={role}
             onChange={e => setRole(e.target.value)}
             placeholder="e.g. Frontend Engineer"
-            style={{ width: "100%" }}
           />
           {profile?.domain && (
-            <p style={{ fontSize: "0.65rem", color: "rgba(86,227,160,0.8)", marginTop: 4, display: "flex", alignItems: "center" }}><Check size={12} className="mr-1" /> Pre-filled from your resume: <strong>{profile.domain}</strong></p>
+            <p className="text-[10px] text-emerald-400 mt-2 font-semibold flex items-center"><Check size={12} className="mr-1" /> Pre-filled from your resume: <strong className="ml-1">{profile.domain}</strong></p>
           )}
         </div>
         <div>
-          <label style={{ fontSize: "0.72rem", color: "rgba(163,119,157,0.75)", marginBottom: 5, display: "block", fontWeight: 600, letterSpacing: "0.06em" }}>SENIORITY LEVEL</label>
-          <div style={{ display: "flex", gap: 8 }}>
+          <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 block font-display">Seniority Level</label>
+          <div className="flex gap-2 bg-black/40 p-1 border border-white/[0.05] rounded-xl">
             {["Junior", "Mid", "Senior", "Lead"].map(s => (
-              <button key={s} onClick={() => setSeniority(s)} style={{ flex: 1, padding: "8px 0", borderRadius: 9, border: `2px solid ${seniority === s ? "#9b59b6" : "rgba(163,119,157,0.2)"}`, background: seniority === s ? "rgba(102,51,153,0.25)" : "transparent", color: seniority === s ? "#f0e8ff" : "rgba(163,119,157,0.6)", fontWeight: 700, cursor: "pointer", fontSize: "0.75rem", transition: "all 0.15s" }}>
+              <button key={s} onClick={() => setSeniority(s)} className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all outline-none ${seniority === s ? "bg-[var(--color-primary)] text-white" : "bg-transparent text-zinc-400 hover:text-zinc-200"}`}>
                 {s}
               </button>
             ))}
@@ -199,129 +196,112 @@ export default function InterviewSimulator() {
         </div>
       </div>
 
-      <div style={{ background: "rgba(102,51,153,0.08)", border: "1px solid rgba(163,119,157,0.12)", borderRadius: 12, padding: "12px 16px", marginBottom: 20 }}>
-        <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "rgba(163,119,157,0.7)", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}><ClipboardList size={14} /> WHAT TO EXPECT</div>
-        <div style={{ fontSize: "0.75rem", color: "rgba(240,232,255,0.7)", lineHeight: 1.7 }}>
-          • 8 randomised interview questions for your role<br />
-          • 90 seconds to think & type each answer<br />
-          • Full review with all your answers at the end<br />
-          • Resume-aware questions when available
+      <div className="bg-white/[0.005] border border-white/[0.05] rounded-xl p-4 mb-6 text-xs text-zinc-450 leading-relaxed font-semibold">
+        <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-2.5 flex items-center gap-1.5 font-display"><ClipboardList size={14} /> WHAT TO EXPECT</div>
+        <div className="space-y-1">
+          <div>â€¢ 8 randomised interview questions for your target role</div>
+          <div>â€¢ 90 seconds to draft & submit response node details</div>
+          <div>â€¢ Direct response calibration breakdown at final step</div>
         </div>
       </div>
 
-      <button
+      <PremiumButton
         onClick={startInterview}
         disabled={loading || !role.trim()}
-        style={{ width: "100%", padding: "14px 0", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#663399,#9b59b6)", color: "white", fontWeight: 800, fontSize: "0.95rem", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.75 : 1, boxShadow: "0 6px 24px rgba(102,51,153,0.45)", transition: "all 0.2s", letterSpacing: "0.02em" }}
-        onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)"; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = ""; }}
+        className="w-full h-11"
       >
-        {loading ? <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Loader2 className="animate-spin" size={16} /> Preparing questions...</span> : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Rocket size={16} /> Start Interview Session</span>}
-      </button>
-    </section>
+        {loading ? <span className="flex items-center gap-2"><Loader2 className="animate-spin" size={16} /> Compiling simulation...</span> : <span className="flex items-center gap-2"><Rocket size={16} /> Initialize Simulation Session</span>}
+      </PremiumButton>
+    </GlassCard>
   );
 
-  // ── INTERVIEW SCREEN ──
+  // â”€â”€ INTERVIEW SCREEN â”€â”€
   if (phase === "interview") {
     const q = questions[currentIdx];
     return (
-      <section style={{ borderRadius: 20, border: "1px solid rgba(163,119,157,0.2)", background: "rgba(18,10,34,0.6)", backdropFilter: "blur(20px)", padding: 28, maxWidth: 620, margin: "0 auto" }}>
+      <GlassCard className="p-7 max-w-[620px] mx-auto animate-fade">
         {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <div style={{ fontSize: "0.72rem", color: "rgba(163,119,157,0.7)", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-            <Mic size={14} /> {role} · {seniority}
+        <div className="flex justify-between items-center mb-6">
+          <div className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider flex items-center gap-1.5 font-display">
+            <Mic size={14} className="text-[var(--accent)]" /> {role} Â· {seniority}
           </div>
-          <div style={{ fontFamily: "monospace", fontSize: "0.88rem", fontWeight: 700, color: timerColor, background: `${timerColor}15`, border: `1px solid ${timerColor}30`, borderRadius: 8, padding: "3px 10px", display: "flex", alignItems: "center", gap: 4 }}>
+          <div className={`font-mono text-xs font-bold ${timerColor} bg-black/40 border border-white/[0.06] rounded-lg px-2.5 py-1 flex items-center gap-1.5`}>
             <Clock size={12} /> {timer}s
           </div>
         </div>
 
         {/* Progress */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-            <span style={{ fontSize: "0.68rem", color: "rgba(163,119,157,0.6)" }}>Question {currentIdx + 1} of {questions.length}</span>
-            <span style={{ fontSize: "0.68rem", color: "rgba(86,227,160,0.8)", fontWeight: 600 }}>{Math.round(progress)}% complete</span>
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-1.5">
+            <span className="text-[10px] text-zinc-500 font-semibold">Question {currentIdx + 1} of {questions.length}</span>
+            <span className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider">{Math.round(progress)}% complete</span>
           </div>
-          <div style={{ height: 5, borderRadius: 99, background: "rgba(163,119,157,0.12)", overflow: "hidden" }}>
-            <div style={{ height: "100%", borderRadius: 99, background: "linear-gradient(90deg,#663399,#9b59b6)", width: `${progress}%`, transition: "width 0.4s ease" }} />
-          </div>
-          <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
-            {questions.map((_, i) => (
-              <div key={i} style={{ flex: 1, height: 3, borderRadius: 99, background: i < currentIdx ? "var(--green)" : i === currentIdx ? "#9b59b6" : "rgba(163,119,157,0.15)", transition: "background 0.3s" }} />
-            ))}
+          <div className="h-1.5 w-full bg-white/[0.04] rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] rounded-full" style={{ width: `${progress}%` }} />
           </div>
         </div>
 
         {/* Question */}
-        <div style={{ background: "rgba(102,51,153,0.1)", border: "1px solid rgba(163,119,157,0.2)", borderRadius: 14, padding: "18px 20px", marginBottom: 18 }}>
-          <div style={{ fontSize: "0.65rem", color: "#9b59b6", fontWeight: 700, marginBottom: 8, letterSpacing: "0.08em" }}>QUESTION {currentIdx + 1}</div>
-          <p style={{ margin: 0, fontSize: "0.95rem", fontWeight: 600, color: "#f0e8ff", lineHeight: 1.7 }}>{q}</p>
+        <div className="bg-white/[0.015] border border-white/[0.05] rounded-xl p-5 mb-5">
+          <span className="text-[9px] font-bold text-[var(--accent)] uppercase tracking-widest block mb-2 font-display">Question Node {currentIdx + 1}</span>
+          <p className="text-sm font-semibold text-white leading-relaxed">{q}</p>
         </div>
 
         {/* Answer textarea */}
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ fontSize: "0.68rem", color: "rgba(163,119,157,0.7)", fontWeight: 600, letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>YOUR ANSWER</label>
+        <div className="mb-6">
+          <label className="text-[9px] font-bold text-zinc-550 uppercase tracking-widest mb-2 block font-display">Your Response</label>
           <textarea
             autoFocus
             value={currentAnswer}
             onChange={e => setCurrentAnswer(e.target.value)}
             placeholder="Type your answer here... Take your time and think through your response."
             rows={5}
-            style={{
-              width: "100%", boxSizing: "border-box",
-              background: "rgba(102,51,153,0.08)", border: "1px solid rgba(163,119,157,0.2)",
-              borderRadius: 12, padding: "12px 14px", color: "#f0e8ff",
-              fontSize: "0.85rem", lineHeight: 1.6, resize: "vertical", outline: "none",
-              fontFamily: "inherit", transition: "border-color 0.2s",
-            }}
-            onFocus={e => { e.target.style.borderColor = "rgba(155,89,182,0.6)"; e.target.style.boxShadow = "0 0 0 3px rgba(102,51,153,0.15)"; }}
-            onBlur={e => { e.target.style.borderColor = "rgba(163,119,157,0.2)"; e.target.style.boxShadow = "none"; }}
+            className="w-full bg-black/40 border border-white/[0.06] rounded-xl p-4 text-xs font-semibold text-white placeholder-zinc-700 focus:border-[var(--color-primary)]/60 outline-none transition-colors duration-200 resize-none font-sans leading-relaxed"
           />
-          <div style={{ fontSize: "0.65rem", color: "rgba(163,119,157,0.5)", marginTop: 4 }}>{currentAnswer.length} characters</div>
+          <div className="text-[10px] text-zinc-600 mt-2 font-mono uppercase tracking-wider">{currentAnswer.length} characters</div>
         </div>
 
         {/* Actions */}
-        <div style={{ display: "flex", gap: 10 }}>
-          <button
+        <div className="flex gap-3">
+          <PremiumButton
             onClick={submitAnswer}
-            style={{ flex: 1, padding: "12px 0", borderRadius: 11, border: "none", background: "linear-gradient(135deg,#663399,#9b59b6)", color: "white", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer", boxShadow: "0 4px 16px rgba(102,51,153,0.4)", transition: "all 0.15s" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = ""; }}
+            className="flex-1"
           >
-            {currentIdx + 1 < questions.length ? <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>Next Question <ArrowRight size={14} /></span> : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>Finish Interview <Check size={14} /></span>}
-          </button>
-          <button
+            {currentIdx + 1 < questions.length ? <span className="flex items-center gap-1.5">Next Question <ArrowRight size={14} /></span> : <span className="flex items-center gap-1.5">Finish Interview <Check size={14} /></span>}
+          </PremiumButton>
+          <PremiumButton
+            variant="ghost"
             onClick={() => { setCurrentAnswer(""); submitAnswer(); }}
-            style={{ padding: "12px 16px", borderRadius: 11, border: "1px solid rgba(163,119,157,0.2)", background: "transparent", color: "rgba(163,119,157,0.6)", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer" }}
+            className="h-10 px-4"
           >
             Skip
-          </button>
+          </PremiumButton>
         </div>
-      </section>
+      </GlassCard>
     );
   }
 
-  // ── REVIEW SCREEN ──
+  // â”€â”€ REVIEW SCREEN â”€â”€
   return (
-    <section style={{ borderRadius: 20, border: "1px solid rgba(86,227,160,0.25)", background: "rgba(18,10,34,0.6)", backdropFilter: "blur(20px)", padding: 28, maxWidth: 620, margin: "0 auto" }}>
-      <div style={{ textAlign: "center", marginBottom: 24 }}>
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}><PartyPopper size={48} color="var(--accent)" /></div>
-        <h2 style={{ margin: 0, fontWeight: 800 }}>Interview Complete!</h2>
-        <p style={{ color: "rgba(163,119,157,0.7)", fontSize: "0.8rem", margin: "8px 0 0" }}>
-          You answered {answers.filter(a => a !== "(Skipped)").length}/{questions.length} questions · {role} · {seniority}
+    <GlassCard className="p-7 max-w-[620px] mx-auto border-emerald-500/10 bg-emerald-500/[0.003] animate-fade">
+      <div className="text-center mb-6">
+        <div className="flex justify-center text-zinc-550 mb-3"><PartyPopper size={40} className="text-[var(--accent)] animate-bounce" /></div>
+        <h2 className="text-lg font-bold text-white font-display">Interview Complete!</h2>
+        <p className="text-[11px] text-zinc-400 font-semibold mt-1.5">
+          You answered {answers.filter(a => a !== "(Skipped)").length}/{questions.length} questions Â· {role} Â· {seniority}
         </p>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 24 }}>
+      <div className="flex flex-col gap-4 mb-6">
         {questions.map((q, i) => (
-          <div key={i} style={{ borderRadius: 14, border: "1px solid rgba(163,119,157,0.15)", background: "rgba(102,51,153,0.06)", overflow: "hidden" }}>
-            <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(163,119,157,0.1)", background: "rgba(102,51,153,0.1)" }}>
-              <span style={{ fontSize: "0.62rem", color: "#9b59b6", fontWeight: 700 }}>Q{i + 1}</span>
-              <p style={{ margin: "4px 0 0", fontSize: "0.82rem", fontWeight: 600, color: "#f0e8ff", lineHeight: 1.5 }}>{q}</p>
+          <div key={i} className="rounded-xl border border-white/[0.05] bg-white/[0.005] overflow-hidden">
+            <div className="p-4 border-b border-white/[0.05] bg-white/[0.01]">
+              <span className="text-[9px] font-bold text-[var(--accent)] uppercase tracking-wider font-display">Question Q{i + 1}</span>
+              <p className="text-xs font-semibold text-zinc-200 leading-relaxed mt-1">{q}</p>
             </div>
-            <div style={{ padding: "12px 16px" }}>
-              <div style={{ fontSize: "0.62rem", color: "rgba(86,227,160,0.8)", fontWeight: 700, marginBottom: 4 }}>YOUR ANSWER</div>
-              <p style={{ margin: 0, fontSize: "0.8rem", color: answers[i] === "(Skipped)" ? "rgba(163,119,157,0.4)" : "rgba(240,232,255,0.8)", lineHeight: 1.6, fontStyle: answers[i] === "(Skipped)" ? "italic" : "normal" }}>
+            <div className="p-4">
+              <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-1.5 font-display">Your Answer Node</span>
+              <p className={`text-xs leading-relaxed font-semibold ${answers[i] === "(Skipped)" ? "text-zinc-600 italic" : "text-zinc-350"}`}>
                 {answers[i] || "(Skipped)"}
               </p>
             </div>
@@ -329,20 +309,22 @@ export default function InterviewSimulator() {
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 10 }}>
-        <button
+      <div className="flex gap-3">
+        <PremiumButton
           onClick={() => { setPhase("setup"); setAnswers([]); setCurrentIdx(0); }}
-          style={{ flex: 1, padding: "12px 0", borderRadius: 11, border: "none", background: "linear-gradient(135deg,#663399,#9b59b6)", color: "white", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+          className="flex-1"
         >
-          <RefreshCw size={16} /> New Session
-        </button>
-        <button
+          <RefreshCw size={14} /> New Session
+        </PremiumButton>
+        <PremiumButton
+          variant="secondary"
           onClick={() => { setQuestions(getQuestionsForRole(role)); setAnswers([]); setCurrentIdx(0); setCurrentAnswer(""); setTimer(90); setPhase("interview"); }}
-          style={{ flex: 1, padding: "12px 0", borderRadius: 11, border: "1px solid rgba(163,119,157,0.3)", background: "transparent", color: "#f0e8ff", fontWeight: 600, fontSize: "0.88rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+          className="flex-1"
         >
-          <RotateCcw size={16} /> Retry Same Role
-        </button>
+          <RotateCcw size={14} /> Retry Same Role
+        </PremiumButton>
       </div>
-    </section>
+    </GlassCard>
   );
 }
+

@@ -22,7 +22,7 @@ export const useAuthStore = create<
       reset: () => set({ token: null, email: null }),
     }),
     {
-      name: "careeriq-auth",
+      name: "hirevix-auth",
     }
   )
 );

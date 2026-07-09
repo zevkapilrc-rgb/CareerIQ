@@ -35,5 +35,5 @@ export const authOptions: NextAuthOptions = {
             return session;
         },
     },
-    secret: process.env.NEXTAUTH_SECRET || "careeriq-secret-key-dev-only",
+    secret: process.env.NEXTAUTH_SECRET || "hirevix-secret-key-dev-only",
 };

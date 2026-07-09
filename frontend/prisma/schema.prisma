@@ -1,0 +1,76 @@
+// ═══════════════════════════════════════════════════════════════
+// Hirevix Database Schema — Prisma ORM
+// Configured for Supabase Postgres and Auth integration
+// ═══════════════════════════════════════════════════════════════
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id             String         @id // Matches Supabase auth.users.id
+  email          String         @unique
+  name           String
+  role           String         @default("user") // user | admin
+  profile        ResumeProfile?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model ResumeProfile {
+  id                 String     @id @default(uuid())
+  userId             String     @unique
+  user               User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rawText            String
+  personalInfo       Json       // PersonalInfo interface
+  summary            String
+  education          Json       // EducationEntry[]
+  experience         Json       // ExperienceEntry[]
+  projects           Json       // ProjectEntry[]
+  certifications     Json       // string[]
+  skills             Json       // { technical: SkillNode[], soft: SkillNode[], tools: SkillNode[] }
+  atsScore           Int
+  atsIssues          Json       // ATSIssue[]
+  careerSignals      Json       // CareerSignals interface
+  embeddingVector    Float[]
+  lastAnalyzedAt     DateTime   @default(now())
+  version            Int        @default(1)
+}
+
+model InterviewSession {
+  id                 String     @id @default(uuid())
+  userId             String
+  type               String     // hr | technical | behavioral | panel
+  targetRole         String
+  turns              Json       // Array of turns with score
+  overallScore       Int
+  categoryBreakdown  Json       // Record<string, number>
+  createdAt          DateTime   @default(now())
+}
+
+model TrackedApplication {
+  id                 String     @id @default(uuid())
+  userId             String
+  jobId              String
+  jobTitle           String
+  company            String
+  status             String     // saved | applied | interviewing | offer | rejected
+  appliedAt          DateTime?
+  notes              String     @default("")
+  updatedAt          DateTime   @updatedAt
+}
+
+model Contact {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  subject   String   @default("")
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

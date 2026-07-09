@@ -1,7 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../../state/useAuthStore";
+import { Card } from "@/src/components/ui/Card";
+import { Award } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === "production" ? "/api" : "http://localhost:8000");
 
@@ -21,17 +23,25 @@ export default function PointsTracker() {
   });
 
   return (
-    <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
-      <h2 className="text-lg font-semibold mb-1">Points</h2>
-      <p className="text-3xl font-bold text-primary">
-        {data?.points ?? 0}
-      </p>
-      <p className="text-xs text-slate-400 mt-1">
-        You&apos;ll earn points as you complete activities.
-      </p>
-    </section>
+    <Card className="p-6 flex flex-col justify-between h-44">
+      <div>
+        <h2 className="text-sm font-semibold text-zinc-200 tracking-wider uppercase mb-1 flex items-center gap-2">
+          <Award size={14} className="text-[var(--teal)]" /> Accumulated Points
+        </h2>
+        <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
+          You&apos;ll earn points as you complete activities.
+        </p>
+      </div>
+      <div>
+        <p className="text-4xl font-normal font-mono text-zinc-100">
+          {data?.points ?? 0} <span className="text-xs text-zinc-500 font-sans tracking-wide uppercase">pts</span>
+        </p>
+      </div>
+    </Card>
   );
 }
+
+
 
 
 

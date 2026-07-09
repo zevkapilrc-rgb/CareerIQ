@@ -3,6 +3,7 @@ Advanced unified Resume AI analysis engine.
 Performs deep analysis in a single pipeline with 13 intelligence modules.
 """
 
+import asyncio
 import json
 import re
 from typing import Dict, List, Any, Optional
@@ -655,7 +656,7 @@ async def analyze_resume_comprehensive(
 ) -> Dict[str, Any]:
     """
     Main unified analysis pipeline.
-    Performs all 13 modules in a single flow.
+    Performs all 13 modules in a single flow, parallelized for maximum performance.
     """
     
     # Extract sections
@@ -664,44 +665,41 @@ async def analyze_resume_comprehensive(
     # Extract skills
     skills = extract_skills_list(resume_text)
     
-    # Module 1: Improved Summary
-    improved_summary = await analyze_improved_summary(sections, skills)
-    
-    # Module 2: Enhanced Experience
-    enhanced_experience = await analyze_enhanced_experience(sections)
-    
-    # Module 3: Skill Optimization
-    skill_optimization = await analyze_skill_optimization(sections, skills)
-    
-    # Module 4: Multi-Dimensional Scores (synchronous)
+    # Module 4: Multi-Dimensional Scores (synchronous logic, execute immediately)
     scores = await analyze_multi_dimensional_scores(resume_text, sections)
     
-    # Module 5: Recruiter Simulation
-    recruiter_simulation = await analyze_recruiter_simulation(resume_text, scores)
+    # Run all asynchronous tasks in parallel using asyncio.gather.
+    # Note: Module 5 (recruiter_simulation) requires 'scores' calculated from Module 4.
+    tasks = [
+        analyze_improved_summary(sections, skills),                     # Module 1
+        analyze_enhanced_experience(sections),                          # Module 2
+        analyze_skill_optimization(sections, skills),                   # Module 3
+        analyze_recruiter_simulation(resume_text, scores),              # Module 5
+        analyze_resume_breakdown(sections),                             # Module 6
+        analyze_skill_intelligence(skills, resume_text),                # Module 7
+        analyze_career_insights(resume_text, skills),                   # Module 8
+        analyze_risk_detection(resume_text, sections),                  # Module 9
+        analyze_interview_questions(resume_text, skills),               # Module 10
+        analyze_personal_branding(sections, skills, name),              # Module 11
+        analyze_portfolio_content(sections, skills),                    # Module 12
+        generate_optimized_resume(sections, {}, job_description)        # Module 13
+    ]
     
-    # Module 6: Resume Breakdown
-    resume_breakdown = await analyze_resume_breakdown(sections)
+    results = await asyncio.gather(*tasks)
     
-    # Module 7: Skill Intelligence
-    skill_intelligence = await analyze_skill_intelligence(skills, resume_text)
-    
-    # Module 8: Career Insights
-    career_insights = await analyze_career_insights(resume_text, skills)
-    
-    # Module 9: Risk Detection (synchronous)
-    risk_detection = await analyze_risk_detection(resume_text, sections)
-    
-    # Module 10: Interview Questions
-    interview_questions = await analyze_interview_questions(resume_text, skills)
-    
-    # Module 11: Personal Branding
-    personal_branding = await analyze_personal_branding(sections, skills, name)
-    
-    # Module 12: Portfolio Content
-    portfolio_content = await analyze_portfolio_content(sections, skills)
-    
-    # Module 13: Optimized Resume
-    optimized_resume = await generate_optimized_resume(sections, {}, job_description)
+    # Unpack findings
+    improved_summary = results[0]
+    enhanced_experience = results[1]
+    skill_optimization = results[2]
+    recruiter_simulation = results[3]
+    resume_breakdown = results[4]
+    skill_intelligence = results[5]
+    career_insights = results[6]
+    risk_detection = results[7]
+    interview_questions = results[8]
+    personal_branding = results[9]
+    portfolio_content = results[10]
+    optimized_resume = results[11]
     
     # Assemble complete response
     return {

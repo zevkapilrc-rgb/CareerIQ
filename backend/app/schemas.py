@@ -302,10 +302,17 @@ class InterviewSimulationResponse(BaseModel):
 
 # ── Learning Path ────────────────────────────────────────────
 
+class LearningModule(BaseModel):
+    title: str
+    description: str
+    video_url: str
+
+
 class LearningPathStep(BaseModel):
     title: str
     description: str
     eta_hours: int
+    modules: List[LearningModule] = []
 
 
 class LearningPathResponse(BaseModel):

@@ -58,15 +58,15 @@ export default function AnalyticsCharts() {
             <Radar
               name="Current"
               dataKey="current"
-              stroke="#A3779D"
-              fill="#A3779D"
+              stroke="#C8C6D7"
+              fill="#C8C6D7"
               fillOpacity={0.4}
             />
             <Radar
               name="Target"
               dataKey="target"
-              stroke="#E6C7E6"
-              fill="#E6C7E6"
+              stroke="#FFFFFF"
+              fill="#FFFFFF"
               fillOpacity={0.2}
             />
           </RadarChart>

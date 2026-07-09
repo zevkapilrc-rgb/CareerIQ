@@ -4,15 +4,17 @@
   "scripts": {
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
     "dev:frontend": "cd frontend && npm run dev",
-    "dev:backend": "cd backend && pip install -r requirements.txt && uvicorn app.main:app --reload --port 8000",
+    "dev:backend": "cd backend && ..\\.venv\\Scripts\\pip install -r requirements.txt && ..\\.venv\\Scripts\\uvicorn app.main:app --reload --port 8000",
     "build": "cd frontend && npm run build"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
   },
   "dependencies": {
-    "firebase": "^12.12.1",
+    "@google/generative-ai": "^0.24.1",
+    "firebase": "^12.14.0",
     "next": "^14.1.0",
-    "razorpay": "^2.9.6"
+    "razorpay": "^2.9.6",
+    "rss-parser": "^3.13.0"
   }
 }

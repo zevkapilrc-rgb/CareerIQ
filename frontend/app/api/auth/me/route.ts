@@ -3,6 +3,8 @@ import jwt from "jsonwebtoken";
 import connectToDatabase from "@/src/lib/mongodb";
 import User from "@/src/models/User";
 
+export const dynamic = "force-dynamic";
+
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || "fallback-secret-for-dev";
 
 export async function GET(req: Request) {
@@ -22,9 +24,15 @@ export async function GET(req: Request) {
       return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ name: user.name, email: user.email }, { status: 200 });
+    return NextResponse.json({
+      name: user.name,
+      email: user.email,
+      role: user.role || "user",
+      profile: user.profile || null,
+    }, { status: 200 });
   } catch (error) {
     console.error("Auth me error:", error);
     return NextResponse.json({ message: "Unauthorized or token expired." }, { status: 401 });
   }
 }
+

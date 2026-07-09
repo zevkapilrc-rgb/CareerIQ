@@ -1,0 +1,14 @@
+$content = Get-Content -Path 'c:\Users\zevka\OneDrive\Desktop\CareerIQ-v3\frontend\app\resume\page.tsx' -Raw
+$content = $content -replace 'purple-500', 'blue-500'
+$content = $content -replace 'purple-600', 'blue-600'
+$content = $content -replace 'purple-400', 'blue-400'
+$content = $content -replace 'purple-300', 'blue-300'
+$content = $content -replace 'purple-200', 'blue-200'
+$content = $content -replace 'purple-900', 'blue-900'
+$content = $content -replace 'from-purple', 'from-blue'
+$content = $content -replace 'to-indigo', 'to-blue'
+$content = $content -replace 'text-purple', 'text-blue'
+$content = $content -replace 'bg-purple', 'bg-blue'
+$content = $content -replace 'border-purple', 'border-blue'
+$content = $content -replace 'shadow-purple', 'shadow-blue'
+Set-Content -Path 'c:\Users\zevka\OneDrive\Desktop\CareerIQ-v3\frontend\app\resume\page.tsx' -Value $content -NoNewline

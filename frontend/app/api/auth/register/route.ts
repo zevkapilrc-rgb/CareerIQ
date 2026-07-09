@@ -1,37 +1,70 @@
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import connectToDatabase from "@/src/lib/mongodb";
-import User from "@/src/models/User";
+import { supabaseAdmin } from "@/src/lib/supabase";
+import prisma from "@/src/lib/prisma";
+
+async function readJsonBody(req: Request) {
+  const text = await req.text();
+  if (!text) return {};
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error("Invalid JSON payload.");
+  }
+}
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password } = await req.json();
+    const body = await readJsonBody(req);
+    const { name, email, password } = body as { name?: string; email?: string; password?: string };
 
     if (!name || !email || !password) {
       return NextResponse.json({ message: "Missing required fields." }, { status: 400 });
     }
 
-    await connectToDatabase();
+    if (!supabaseAdmin) {
+      return NextResponse.json({ message: "Authentication service is not configured." }, { status: 503 });
+    }
 
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    // Check if user already exists in Prisma DB
+    const existingUser = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() }
+    });
+
     if (existingUser) {
       return NextResponse.json({ message: "User already exists with this email." }, { status: 409 });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = await User.create({
-      name,
+    // 1. Create user in Supabase Auth
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: email.toLowerCase(),
-      password: hashedPassword,
+      password: password,
+      email_confirm: true,
+      user_metadata: { name }
+    });
+
+    if (authError || !authUser.user) {
+      console.error("Supabase auth registration error:", authError);
+      return NextResponse.json({ message: authError?.message || "Failed to create authentication user." }, { status: 500 });
+    }
+
+    // 2. Create user in Prisma DB using the Supabase User ID
+    const newUser = await prisma.user.create({
+      data: {
+        id: authUser.user.id,
+        email: email.toLowerCase(),
+        name,
+        role: "user"
+      }
     });
 
     return NextResponse.json(
-      { message: "User created successfully", user: { id: newUser._id, name: newUser.name, email: newUser.email } },
+      { message: "User created successfully", user: { id: newUser.id, name: newUser.name, email: newUser.email } },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Registration error:", error);
-    return NextResponse.json({ message: "An error occurred during registration." }, { status: 500 });
+    const status = error.message === "Invalid JSON payload." ? 400 : 500;
+    return NextResponse.json({ message: error.message || "An error occurred during registration." }, { status });
   }
 }

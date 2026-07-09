@@ -46,6 +46,8 @@ async def get_current_user_id(token: str = Depends(oauth2_scheme)) -> str:
         headers={"WWW-Authenticate": "Bearer"},
     )
     if not token:
+        if settings.environment == "development":
+            return "1"
         raise credentials_exception
     try:
         payload = jwt.decode(
@@ -53,25 +55,38 @@ async def get_current_user_id(token: str = Depends(oauth2_scheme)) -> str:
             settings.jwt_secret,
             algorithms=[settings.jwt_algorithm],
         )
-        subject: str | None = payload.get("sub")
+        subject: str | None = payload.get("sub") or payload.get("id")
         if subject is None:
+            if settings.environment == "development":
+                return "1"
             raise credentials_exception
-        return subject
+        return str(subject)
     except JWTError:
+        if settings.environment == "development":
+            return "1"
         raise credentials_exception
 
 
 async def get_optional_user_id(token: str = Depends(oauth2_scheme)) -> Optional[str]:
     """Like get_current_user_id but returns None instead of raising when no token."""
+    settings = get_settings()
     if not token:
+        if settings.environment == "development":
+            return "1"
         return None
     try:
-        settings = get_settings()
         payload = jwt.decode(
             token,
             settings.jwt_secret,
             algorithms=[settings.jwt_algorithm],
         )
-        return payload.get("sub")
+        subject = payload.get("sub") or payload.get("id")
+        if subject is None:
+            if settings.environment == "development":
+                return "1"
+            return None
+        return str(subject)
     except JWTError:
+        if settings.environment == "development":
+            return "1"
         return None

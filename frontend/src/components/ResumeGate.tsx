@@ -1,150 +1,188 @@
 "use client";
+
 import { useAppStore } from "@/src/state/useAppStore";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ReactNode, useEffect, useState } from "react";
-import { Lock, Rocket, FileText, Sparkles, BarChart, Mic, Map, Puzzle, BookOpen, Network } from "lucide-react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
+import { Lock, Sparkles } from "lucide-react";
+import { BackgroundBlobs } from "./ResumeGate/BackgroundBlobs";
+import { FeatureGrid } from "./ResumeGate/FeatureGrid";
+import { Hero } from "./ResumeGate/Hero";
+import { UploadZone } from "./ResumeGate/UploadZone";
+import { GlassCard } from "./ResumeGate/GlassCard";
+import ModuleGate from "./ModuleGate";
 
 interface ResumeGateProps {
-    children: ReactNode;
-    pageName?: string;
-    pageIcon?: ReactNode;
+  children: ReactNode;
+  pageName?: string;
+  pageIcon?: ReactNode;
 }
 
-export default function ResumeGate({ children, pageName = "this page", pageIcon = <Lock size={64} /> }: ResumeGateProps) {
-    const { profile, role } = useAppStore();
-    const router = useRouter();
-    const [mounted, setMounted] = useState(false);
+const demoProfile = {
+  name: "Alex Dev",
+  bio: "Passionate Full-Stack Software Engineer with 3+ years of experience building web applications.",
+  avatar: "🧑‍💻",
+  skills: ["React", "Next.js", "TypeScript", "Node.js", "Python", "Docker", "AWS", "SQL", "Tailwind CSS"],
+  experience: 3,
+  domain: "Full-Stack Software Engineering",
+  projects: ["E-Commerce Platform", "Real-Time Chat App", "AI Resume Analyzer"],
+  education: "B.S. in Computer Science",
+  xp: 250,
+  level: "Explorer",
+  resumeAnalysis: {
+    scores: {
+      ats_score: 82,
+      recruiter_score: 85,
+      impact_score: 78,
+      skill_depth_score: 80,
+      career_consistency_score: 90,
+      overall_score: 83,
+    },
+    improved_summary: {
+      improved: "Highly motivated Full-Stack Engineer with 3+ years of experience designing and deploying scalable web services.",
+      key_keywords: ["Next.js", "Scalability", "API Integration"],
+      ats_compliance: 88,
+    },
+  },
+};
 
-    // Wait for client-side hydration before checking auth
-    useEffect(() => { setMounted(true); }, []);
+export default function ResumeGate({ children, pageName = "this page", pageIcon = <Lock size={48} /> }: ResumeGateProps) {
+  const { profile, role, setProfile, addXP } = useAppStore();
+  const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+  const [clock, setClock] = useState(() => new Date());
 
-    // ── Guest: redirect to login, saving return path ──────────────
-    useEffect(() => {
-        if (!mounted) return;
-        if (role === "guest") {
-            if (typeof window !== "undefined") {
-                const currentPath = window.location.pathname.replace(/^\//, "") || "dashboard";
-                localStorage.setItem("ciq-redirect-after-login", currentPath);
-            }
-            router.replace("/login");
-        }
-    }, [role, router, mounted]);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-    // Don't render anything until mounted (prevents flash)
-    if (!mounted) {
-        return (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
-                <div style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>Loading…</div>
-            </div>
-        );
-    }
-
+  useEffect(() => {
+    if (!mounted) return;
     if (role === "guest") {
-        return (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
-                <div style={{ color: "var(--text-muted)", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
-                    <Lock size={32} style={{ color: "var(--accent)" }} />
-                    <span style={{ fontSize: "0.88rem" }}>Redirecting to sign in…</span>
-                </div>
-            </div>
-        );
+      if (typeof window !== "undefined") {
+        const currentPath = window.location.pathname.replace(/^\//, "") || "profile";
+        localStorage.setItem("ciq-redirect-after-login", currentPath);
+      }
+      router.replace("/login");
     }
+  }, [role, router, mounted]);
 
-    // ── Logged in but no resume ────────────────────────────────────
-    if (!profile || !profile.skills || profile.skills.length === 0) {
-        return (
-            <div className="page-enter" style={{ maxWidth: 640, margin: "0 auto" }}>
-                {/* Header */}
-                <div style={{ textAlign: "center", padding: "48px 0 40px" }}>
-                    <div style={{
-                        display: "inline-flex", alignItems: "center", gap: 8,
-                        background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.25)",
-                        borderRadius: 20, padding: "5px 16px", fontSize: "0.75rem", color: "#fbbf24", marginBottom: 24
-                    }}>
-                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#fbbf24", display: "inline-block" }} />
-                        Resume Required to Unlock {pageName}
-                    </div>
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock(new Date()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
-                    <div style={{ display: "flex", justifyContent: "center", marginBottom: 16, color: "var(--text)" }} className="animate-float">{pageIcon}</div>
+  const timeLabel = useMemo(() => clock.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }), [clock]);
 
-                    <h1 style={{ fontSize: "1.8rem", marginBottom: 12, background: "linear-gradient(135deg,#f1f5f9,#a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-                        Unlock {pageName}
-                    </h1>
+  const unlockWithProfile = (sourceProfile: typeof demoProfile, sourceLabel: string) => {
+    setProfile({
+      ...sourceProfile,
+      name: sourceProfile.name,
+      avatar: sourceProfile.avatar,
+      skills: sourceProfile.skills,
+      experience: sourceProfile.experience,
+      domain: sourceProfile.domain,
+      projects: sourceProfile.projects,
+      education: sourceProfile.education,
+      xp: sourceProfile.xp,
+      level: sourceProfile.level,
+      resumeAnalysis: sourceProfile.resumeAnalysis,
+    });
+    addXP(120, sourceLabel);
+  };
 
-                    <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", lineHeight: 1.8, maxWidth: 480, margin: "0 auto 32px" }}>
-                        Upload your resume to unlock <strong style={{ color: "var(--text)" }}>{pageName}</strong> and get personalized AI-powered insights based on your actual skills, experience, and career goals.
-                    </p>
+  if (!mounted) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--color-primary-light)]/30 border-t-[var(--color-primary-light)]" />
+      </div>
+    );
+  }
 
-                    <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-                        <Link href="/resume" className="btn-primary" style={{
-                            textDecoration: "none", padding: "14px 36px", fontSize: "1rem",
-                            background: "linear-gradient(135deg,#7c3aed,#a78bfa)",
-                            boxShadow: "0 8px 24px rgba(124,58,237,0.35)",
-                            display: "flex", alignItems: "center", gap: 8
-                        }}>
-                            <FileText size={18} /> Upload Resume — Unlock Now
-                        </Link>
-                        <Link href="/dashboard" className="btn-ghost" style={{ textDecoration: "none", padding: "14px 28px" }}>
-                            ← Dashboard
-                        </Link>
-                    </div>
-                </div>
+  if (role === "guest") {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-zinc-500">
+          <Lock size={24} className="animate-pulse text-[var(--color-primary-light)]" />
+          <span className="text-xs">Redirecting to sign in…</span>
+        </div>
+      </div>
+    );
+  }
 
-                {/* What you unlock */}
-                <div className="card animate-glow" style={{
-                    marginBottom: 24,
-                    background: "linear-gradient(135deg,rgba(124,58,237,0.08),rgba(167,139,250,0.04))",
-                    borderColor: "rgba(124,58,237,0.25)"
-                }}>
-                    <h2 style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}><Sparkles size={20} /> What You Unlock</h2>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
-                        {[
-                            { icon: <BarChart size={24} />, title: "Career Dashboard", desc: "Skill radar, health score & analytics" },
-                            { icon: <Mic size={24} />, title: "Interview Sim", desc: "Resume-based questions + aptitude" },
-                            { icon: <Map size={24} />, title: "Career Path AI", desc: "Personalized 6-month roadmap" },
-                            { icon: <Puzzle size={24} />, title: "Skill Gap Analysis", desc: "Compare your skills vs market" },
-                            { icon: <BookOpen size={24} />, title: "Learning Path", desc: "Recommended courses for YOUR gaps" },
-                            { icon: <Network size={24} />, title: "Skill DNA Graph", desc: "Visual skill connection map" },
-                        ].map(item => (
-                            <div key={item.title} style={{
-                                display: "flex", gap: 10, alignItems: "flex-start",
-                                padding: "12px 14px", borderRadius: 10,
-                                background: "rgba(255,255,255,0.03)",
-                                border: "1px solid rgba(167,139,250,0.1)"
-                            }}>
-                                <div style={{ color: "var(--accent)", flexShrink: 0 }}>{item.icon}</div>
-                                <div>
-                                    <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text)", marginBottom: 2 }}>{item.title}</div>
-                                    <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>{item.desc}</div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+  if (!profile || !profile.skills || profile.skills.length === 0) {
+    return (
+      <ModuleGate
+        title={pageName}
+        eyebrow="Module unlock"
+        description={`Unlock ${pageName} with a real profile snapshot and get tailored guidance, market insights, and action steps immediately.`}
+        icon={pageIcon}
+        accentColor="rgba(128, 0, 32, 0.18)"
+        badge={`Live market pulse · ${timeLabel}`}
+      >
+        <BackgroundBlobs />
 
-                {/* Steps */}
-                <div className="card" style={{ marginBottom: 24 }}>
-                    <h3 style={{ marginBottom: 14 }}>How it works</h3>
-                    {[
-                        { n: "1", text: "Upload your resume (PDF, DOCX, or PNG)", color: "#a78bfa" },
-                        { n: "2", text: "AI extracts your skills, domain & experience in seconds", color: "#60a5fa" },
-                        { n: "3", text: "All pages instantly personalize to your profile", color: "#34d399" },
-                    ].map(s => (
-                        <div key={s.n} style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 12 }}>
-                            <div style={{
-                                width: 28, height: 28, borderRadius: "50%",
-                                background: `linear-gradient(135deg,${s.color}66,${s.color})`,
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                fontSize: "0.75rem", fontWeight: 800, color: "white", flexShrink: 0
-                            }}>{s.n}</div>
-                            <span style={{ fontSize: "0.83rem", color: "var(--text-sub)" }}>{s.text}</span>
-                        </div>
-                    ))}
-                </div>
+        <Hero
+          onDemoUnlock={() => unlockWithProfile(demoProfile, "Loaded Demo Profile Credentials")}
+          onUploadFocus={() => {
+            const uploadEl = document.getElementById("resume-upload-zone");
+            uploadEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+          }}
+        />
+
+        <FeatureGrid />
+
+        <div className="mt-8 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <GlassCard className="p-6">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-[var(--accent-light)]" />
+              <h3 className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--text-muted)]">How it works</h3>
             </div>
-        );
-    }
+            <div className="mt-5 space-y-4">
+              {[
+                { step: "1", text: "Upload your resume and let the AI parse your story in seconds." },
+                { step: "2", text: "We surface skill gaps, a career path, and interview prep tailored to you." },
+                { step: "3", text: "Every page immediately personalizes around your data and goals." },
+              ].map((item) => (
+                <div key={item.step} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-black/20 p-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--accent)]/10 text-sm font-semibold text-[var(--accent-light)]">
+                    {item.step}
+                  </div>
+                  <p className="text-sm leading-6 text-[var(--text-muted)]">{item.text}</p>
+                </div>
+              ))}
+            </div>
+          </GlassCard>
 
-    return <>{children}</>;
+          <div id="resume-upload-zone">
+            <GlassCard className="p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--text-muted)]">Upload</p>
+                  <h3 className="text-lg font-semibold text-[var(--text)]">Resume intake</h3>
+                </div>
+                <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-[var(--text-muted)]">Live processing</div>
+              </div>
+              <UploadZone
+                onUploadComplete={(fileName) => {
+                  unlockWithProfile(
+                    {
+                      ...demoProfile,
+                      name: fileName.replace(/\.[^.]+$/, ""),
+                      bio: "Uploaded resume analyzed and unlocked for personalized coaching.",
+                      skills: ["React", "Next.js", "TypeScript", "Product strategy", "System design"],
+                      experience: 4,
+                      domain: "Product Engineering",
+                    },
+                    "Resume upload unlocked Career Path AI"
+                  );
+                }}
+              />
+            </GlassCard>
+          </div>
+        </div>
+      </ModuleGate>
+    );
+  }
+
+  return <>{children}</>;
 }

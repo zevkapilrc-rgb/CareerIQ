@@ -1,11 +1,16 @@
 "use client";
+
 import { useAppStore } from "@/src/state/useAppStore";
+import { CheckCircle, Lightbulb, AlertTriangle, Bell, Trash2, CheckSquare } from "lucide-react";
+import GlassCard from "@/src/components/ui/GlassCard";
+import Badge from "@/src/components/ui/Badge";
+import PremiumButton from "@/src/components/ui/PremiumButton";
 
-import { CheckCircle, Lightbulb, AlertTriangle, Bell } from "lucide-react";
-
-const typeColors = { success: "var(--green)", info: "var(--accent)", warning: "var(--yellow)" };
-const typeDots = { success: "#34d399", info: "#a78bfa", warning: "#fbbf24" };
-const typeIcons = { success: <CheckCircle size={14} />, info: <Lightbulb size={14} />, warning: <AlertTriangle size={14} /> };
+const typeIcons = { 
+    success: <CheckCircle size={14} className="text-emerald-400" />, 
+    info: <Lightbulb size={14} className="text-[#C0506A]" />, 
+    warning: <AlertTriangle size={14} className="text-amber-400" /> 
+};
 
 export default function NotificationsPage() {
     const { notifications, markNotificationsRead, clearNotifications, addNotification } = useAppStore();
@@ -17,46 +22,74 @@ export default function NotificationsPage() {
     };
 
     return (
-        <div className="page-enter" style={{ maxWidth: 700, margin: "0 auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+        <div className="max-w-[760px] mx-auto px-4 pb-16 pt-4 space-y-8 animate-fade font-sans">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-5 border-b border-white/[0.05] pb-6 mt-2">
                 <div>
-                    <h1 style={{ marginBottom: 4 }}>Notifications</h1>
-                    <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>{notifications.length} total · {notifications.filter(n => !n.read).length} unread</p>
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-[#C0506A] font-display">System Inbox</span>
+                        <Badge label="Activity Logs" variant="purple" size="sm" dot={true} />
+                    </div>
+                    <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight leading-none font-display">
+                        Notifications
+                    </h1>
+                    <p className="text-xs text-zinc-550 mt-2.5 leading-relaxed font-semibold">
+                        {notifications.length} total · {notifications.filter(n => !n.read).length} unread messages
+                    </p>
                 </div>
-                <div style={{ display: "flex", gap: 10 }}>
-                    <button className="btn-ghost" onClick={simulate} style={{ display: "flex", alignItems: "center", gap: 6 }}><Bell size={16} /> Simulate</button>
-                    <button className="btn-ghost" onClick={markNotificationsRead}>Mark all read</button>
-                    {notifications.length > 0 && <button className="btn-danger" onClick={clearNotifications}>Clear all</button>}
+                <div className="flex items-center gap-2.5 flex-wrap w-full sm:w-auto">
+                    <PremiumButton variant="secondary" size="sm" onClick={simulate}>
+                        <Bell size={13} className="mr-1" /> Simulate
+                    </PremiumButton>
+                    <PremiumButton variant="secondary" size="sm" onClick={markNotificationsRead}>
+                        <CheckSquare size={13} className="mr-1" /> Mark all read
+                    </PremiumButton>
+                    {notifications.length > 0 && (
+                        <PremiumButton size="sm" onClick={clearNotifications} className="text-red-400 border-red-950 hover:bg-red-950/20">
+                            <Trash2 size={13} className="mr-1" /> Clear all
+                        </PremiumButton>
+                    )}
                 </div>
             </div>
 
             {notifications.length === 0 ? (
-                <div className="card" style={{ textAlign: "center", padding: 60 }}>
-                    <div style={{ display: "flex", justifyContent: "center", marginBottom: 16, color: "var(--accent)" }}><Bell size={48} /></div>
-                    <h2 style={{ marginBottom: 8 }}>All caught up!</h2>
-                    <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: 20 }}>No notifications yet. Complete tasks to earn notifications.</p>
-                    <button className="btn-primary" onClick={simulate}>Generate Sample Notifications</button>
-                </div>
+                <GlassCard className="text-center py-16 px-6 flex flex-col items-center justify-center">
+                    <div className="w-12 h-12 rounded-xl bg-white/[0.02] border border-white/[0.08] flex items-center justify-center mb-5 text-zinc-500">
+                        <Bell size={22} />
+                    </div>
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-white font-display mb-1.5">All caught up!</h2>
+                    <p className="text-xs text-zinc-500 max-w-sm mx-auto leading-relaxed font-semibold mb-6">
+                        No notifications yet. Complete tasks, build streaks, or simulation events to see notifications here.
+                    </p>
+                    <PremiumButton onClick={simulate}>
+                        Generate Sample Notifications
+                    </PremiumButton>
+                </GlassCard>
             ) : (
-                <div className="card stagger" style={{ padding: 0, overflow: "hidden" }}>
+                <GlassCard className="p-0 overflow-hidden divide-y divide-white/[0.04]">
                     {notifications.map((n) => (
-                        <div key={n.id} className={`notif-item ${n.read ? "" : "unread"}`}>
-                            <div className="notif-dot" style={{ background: typeDots[n.type] || "#a78bfa" }} />
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: "0.83rem", color: "var(--text)", marginBottom: 3, display: "flex", alignItems: "center", gap: 6 }}>
-                                    <span style={{ color: typeColors[n.type], display: "flex" }}>{typeIcons[n.type]}</span>
+                        <div 
+                            key={n.id} 
+                            className={`flex items-start gap-4 p-4 transition-colors hover:bg-white/[0.01] ${n.read ? "opacity-60" : "bg-[#6D001A]/5"}`}
+                        >
+                            <div className="mt-1 flex-shrink-0">
+                                {typeIcons[n.type] || <Bell size={14} className="text-zinc-550" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="text-xs font-semibold text-zinc-305 leading-relaxed">
                                     {n.message}
                                 </div>
-                                <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>{n.time}</div>
+                                <div className="text-[9px] text-zinc-550 mt-1.5 font-bold uppercase tracking-widest font-mono">
+                                    {n.time}
+                                </div>
                             </div>
-                            {!n.read && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--accent)", flexShrink: 0 }} />}
+                            {!n.read && (
+                                <div className="w-1.5 h-1.5 rounded-full bg-[#6D001A] mt-2 flex-shrink-0 animate-pulse" />
+                            )}
                         </div>
                     ))}
-                </div>
+                </GlassCard>
             )}
         </div>
     );
 }
-
-
-
